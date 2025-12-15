@@ -172,18 +172,51 @@ const statsCommandHandler = async (context: Context) => {
 
   // Check if we're in a private chat
   if (chat.type === "private") {
-    if (!isWebAppConfigured()) {
-      return context.reply(
-        "⚠️ The stats web app is not configured yet. Please ask the bot administrator to set it up.",
-      );
+    // Show user statistics and add button to open web app
+    const userStats = await getAggregatedUserStat(from.id);
+
+    if (!userStats) {
+      let message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
+
+      if (isWebAppConfigured()) {
+        const keyboard = new InlineKeyboard().webApp(
+          "🌐 Open Web App",
+          config.webapp.url,
+        );
+        await context.reply(message, {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+        });
+      } else {
+        await context.reply(message, {
+          parse_mode: "Markdown",
+        });
+      }
+    } else {
+      const message =
+        `📊 *Your Statistics*\n\n` +
+        `👤 Name: ${from.first_name}${from.last_name ? " " + from.last_name : ""}\n` +
+        `💬 Messages: ${userStats.message_count || 0}\n` +
+        `📝 Words: ${userStats.word_count || 0}\n` +
+        `📈 Avg. words/msg: ${userStats.average_words || 0}\n` +
+        `🖼️ Media: ${userStats.media_count || 0}\n` +
+        `😊 Stickers: ${userStats.sticker_count || 0}`;
+
+      if (isWebAppConfigured()) {
+        const keyboard = new InlineKeyboard().webApp(
+          "🌐 Open Web App",
+          config.webapp.url,
+        );
+        await context.reply(message, {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+        });
+      } else {
+        await context.reply(message, {
+          parse_mode: "Markdown",
+        });
+      }
     }
-
-    const message =
-      "📊 *Your Statistics Hub*\n\nOpen the web app to view your detailed statistics.";
-
-    await context.reply(message, {
-      parse_mode: "Markdown",
-    });
   } else {
     // In a group chat, show the user's statistics directly
     const userStats = await getAggregatedUserStat(from.id);
