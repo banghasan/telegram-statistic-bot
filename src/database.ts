@@ -513,153 +513,90 @@ export async function upsertUserStat(data: {
   wordCount?: number;
 }) {
   const now = new Date().toISOString().replace("T", " ").replace("Z", "");
-  const existing = await getUserStat(data.userId, data.groupId);
-
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  if (existing) {
-    // Update existing record
-    if (dbType === "sqlite") {
-      await db.execute(
-        `
-        UPDATE user_stats
-        SET
-            username = ?,
-            first_name = ?,
-            last_name = ?,
-            group_title = ?,
-            group_username = ?,
-            message_count = message_count + ?,
-            word_count = word_count + ?,
-            sticker_count = sticker_count + ?,
-            media_count = media_count + ?,
-            updatedAt = ?
-        WHERE user_id = ? AND group_id = ?
-      `,
-        [
-          data.username || null,
-          data.firstName,
-          data.lastName || null,
-          data.groupTitle || null,
-          data.groupUsername || null,
-          data.isText || data.isMedia || data.isSticker ? 1 : 0,
-          data.wordCount || 0,
-          data.isSticker ? 1 : 0,
-          data.isMedia ? 1 : 0,
-          now,
-          data.userId,
-          data.groupId,
-        ]
-      );
-    } else {
-      // mariadb
-      await db.execute(
-        `
-        UPDATE user_stats
-        SET
-            username = ?,
-            first_name = ?,
-            last_name = ?,
-            group_title = ?,
-            group_username = ?,
-            message_count = message_count + ?,
-            word_count = word_count + ?,
-            sticker_count = sticker_count + ?,
-            media_count = media_count + ?,
-            updatedAt = ?
-        WHERE user_id = ? AND group_id = ?
-      `,
-        [
-          data.username || null,
-          data.firstName,
-          data.lastName || null,
-          data.groupTitle || null,
-          data.groupUsername || null,
-          data.isText || data.isMedia || data.isSticker ? 1 : 0,
-          data.wordCount || 0,
-          data.isSticker ? 1 : 0,
-          data.isMedia ? 1 : 0,
-          now,
-          data.userId,
-          data.groupId,
-        ]
-      );
-    }
+  const params = [
+    data.userId,
+    data.groupId,
+    data.username || null,
+    data.firstName,
+    data.lastName || null,
+    data.groupTitle || null,
+    data.groupUsername || null,
+    data.isText || data.isMedia || data.isSticker ? 1 : 0,
+    data.wordCount || 0,
+    data.isSticker ? 1 : 0,
+    data.isMedia ? 1 : 0,
+    now,
+    now,
+  ];
+
+  if (dbType === "sqlite") {
+    await db.execute(
+      `
+      INSERT INTO user_stats (
+          user_id,
+          group_id,
+          username,
+          first_name,
+          last_name,
+          group_title,
+          group_username,
+          message_count,
+          word_count,
+          sticker_count,
+          media_count,
+          createdAt,
+          updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, group_id) DO UPDATE SET
+          username = excluded.username,
+          first_name = excluded.first_name,
+          last_name = excluded.last_name,
+          group_title = excluded.group_title,
+          group_username = excluded.group_username,
+          message_count = user_stats.message_count + excluded.message_count,
+          word_count = user_stats.word_count + excluded.word_count,
+          sticker_count = user_stats.sticker_count + excluded.sticker_count,
+          media_count = user_stats.media_count + excluded.media_count,
+          updatedAt = excluded.updatedAt
+    `,
+      params
+    );
   } else {
-    // Insert new record
-    if (dbType === "sqlite") {
-      await db.execute(
-        `
-        INSERT INTO user_stats (
-            user_id,
-            group_id,
-            username,
-            first_name,
-            last_name,
-            group_title,
-            group_username,
-            message_count,
-            word_count,
-            sticker_count,
-            media_count,
-            createdAt,
-            updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-        [
-          data.userId,
-          data.groupId,
-          data.username || null,
-          data.firstName,
-          data.lastName || null,
-          data.groupTitle || null,
-          data.groupUsername || null,
-          data.isText || data.isMedia || data.isSticker ? 1 : 0,
-          data.wordCount || 0,
-          data.isSticker ? 1 : 0,
-          data.isMedia ? 1 : 0,
-          now,
-          now,
-        ]
-      );
-    } else {
-      // mariadb
-      await db.execute(
-        `
-        INSERT INTO user_stats (
-            user_id,
-            group_id,
-            username,
-            first_name,
-            last_name,
-            group_title,
-            group_username,
-            message_count,
-            word_count,
-            sticker_count,
-            media_count,
-            createdAt,
-            updatedAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `,
-        [
-          data.userId,
-          data.groupId,
-          data.username || null,
-          data.firstName,
-          data.lastName || null,
-          data.groupTitle || null,
-          data.groupUsername || null,
-          data.isText || data.isMedia || data.isSticker ? 1 : 0,
-          data.wordCount || 0,
-          data.isSticker ? 1 : 0,
-          data.isMedia ? 1 : 0,
-          now,
-          now,
-        ]
-      );
-    }
+    // mariadb
+    await db.execute(
+      `
+      INSERT INTO user_stats (
+          user_id,
+          group_id,
+          username,
+          first_name,
+          last_name,
+          group_title,
+          group_username,
+          message_count,
+          word_count,
+          sticker_count,
+          media_count,
+          createdAt,
+          updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+          username = VALUES(username),
+          first_name = VALUES(first_name),
+          last_name = VALUES(last_name),
+          group_title = VALUES(group_title),
+          group_username = VALUES(group_username),
+          message_count = message_count + VALUES(message_count),
+          word_count = word_count + VALUES(word_count),
+          sticker_count = sticker_count + VALUES(sticker_count),
+          media_count = media_count + VALUES(media_count),
+          updatedAt = VALUES(updatedAt)
+    `,
+      params
+    );
   }
 }
 
@@ -728,26 +665,47 @@ export async function upsertUserProfile(
   isBanned: boolean = false
 ): Promise<void> {
   const now = new Date().toISOString().replace("T", " ").replace("Z", "");
-  const existing = await getUserProfile(userId);
-
   const db = getDatabase();
+  const dbType = db.getDbType();
 
-  if (existing) {
-    await db.execute(
-      `
-      UPDATE users
-      SET username = ?, first_name = ?, last_name = ?, is_banned = ?, updated_at = ?
-      WHERE user_id = ?
-    `,
-      [username, firstName, lastName, isBanned ? 1 : 0, now, userId]
-    );
-  } else {
+  const params = [
+    userId,
+    username,
+    firstName,
+    lastName,
+    isBanned ? 1 : 0,
+    now,
+    now,
+  ];
+
+  if (dbType === "sqlite") {
     await db.execute(
       `
       INSERT INTO users (user_id, username, first_name, last_name, is_banned, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+          username = excluded.username,
+          first_name = excluded.first_name,
+          last_name = excluded.last_name,
+          is_banned = excluded.is_banned,
+          updated_at = excluded.updated_at
     `,
-      [userId, username, firstName, lastName, isBanned ? 1 : 0, now, now]
+      params
+    );
+  } else {
+    // mariadb
+    await db.execute(
+      `
+      INSERT INTO users (user_id, username, first_name, last_name, is_banned, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+          username = VALUES(username),
+          first_name = VALUES(first_name),
+          last_name = VALUES(last_name),
+          is_banned = VALUES(is_banned),
+          updated_at = VALUES(updated_at)
+    `,
+      params
     );
   }
 }
