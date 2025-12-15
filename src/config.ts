@@ -1,49 +1,67 @@
 import fs from "node:fs";
 import yaml from "js-yaml";
 import { merge } from "lodash";
+import { z } from "zod";
 
-interface BotConfig {
-  token: string;
-  mode: "polling" | "webhook";
-  webhook: {
-    url: string;
-  };
-}
+// --- Zod Schemas ---
 
-export interface DatabaseConfig {
-  type: "sqlite" | "mariadb";
-  host?: string;
-  port?: number;
-  username?: string;
-  password?: string;
-  database?: string;
-  filename?: string; // For SQLite
-}
+const BotConfigSchema = z.object({
+  token: z.string().min(1, "Bot token is required"),
+  mode: z.enum(["polling", "webhook"]),
+  webhook: z.object({
+    url: z.string().url(),
+  }).optional(),
+}).refine((data) => {
+  if (data.mode === "webhook" && !data.webhook?.url) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Webhook URL is required when mode is 'webhook'",
+  path: ["webhook", "url"],
+});
 
-interface WebAppConfig {
-  url: string;
-}
+const DatabaseConfigSchema = z.object({
+  type: z.enum(["sqlite", "mariadb"]),
+  host: z.string().optional(),
+  port: z.number().optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  database: z.string().optional(),
+  filename: z.string().optional(),
+});
 
-interface ServerConfig {
-  host?: string;
-  port?: number;
-}
+const WebAppConfigSchema = z.object({
+  url: z.string().url(),
+});
 
-export interface Config {
-  timezone: string;
-  bot: BotConfig;
-  webapp: WebAppConfig;
-  server: ServerConfig;
-  database: DatabaseConfig;
-  owner: number;
-  admins: number[];
-}
+const ServerConfigSchema = z.object({
+  host: z.string().default("localhost"),
+  port: z.number().default(8101),
+});
 
-let loadedConfig: Partial<Config>;
+const ConfigSchema = z.object({
+  timezone: z.string().default("Asia/Jakarta"),
+  bot: BotConfigSchema,
+  webapp: WebAppConfigSchema,
+  server: ServerConfigSchema,
+  database: DatabaseConfigSchema,
+  owner: z.number(),
+  admins: z.array(z.number()),
+});
+
+// --- Types inferred from Zod ---
+
+export type Config = z.infer<typeof ConfigSchema>;
+export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
+
+// --- Loading & Validation ---
+
+let loadedConfig: unknown;
 
 try {
   const configFile = fs.readFileSync("config.yml", "utf8");
-  loadedConfig = yaml.load(configFile) as Config;
+  loadedConfig = yaml.load(configFile);
 } catch (_e) {
   console.error("Error reading or parsing config.yml file.");
   console.error(
@@ -53,7 +71,7 @@ try {
   process.exit(1);
 }
 
-const defaultConfig: Partial<Config> = {
+const defaultConfig = {
   timezone: "Asia/Jakarta",
   database: {
     type: "sqlite",
@@ -65,18 +83,16 @@ const defaultConfig: Partial<Config> = {
   },
 };
 
-const config: Config = merge(defaultConfig, loadedConfig) as unknown as Config;
+const mergedConfig = merge(defaultConfig, loadedConfig);
 
-if (!config.bot?.token || config.bot.token === "YOUR_BOT_TOKEN") {
-  console.error("Bot token is not configured in config.yml (bot.token)");
+const result = ConfigSchema.safeParse(mergedConfig);
+
+if (!result.success) {
+  console.error("❌ Invalid configuration in config.yml:");
+  console.error(result.error.format());
   process.exit(1);
 }
 
-if (!config.bot.mode || !["polling", "webhook"].includes(config.bot.mode)) {
-  console.error(
-    "Bot mode must be set to either 'polling' or 'webhook' in config.yml (bot.mode)"
-  );
-  process.exit(1);
-}
+const config = result.data;
 
 export default config;
