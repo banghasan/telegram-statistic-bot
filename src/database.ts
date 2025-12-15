@@ -41,6 +41,19 @@ db.run(`
   )
 `);
 
+// Create a table to store user profiles with ban status
+db.run(`
+  CREATE TABLE IF NOT EXISTS users (
+    user_id INTEGER PRIMARY KEY,
+    username TEXT,
+    first_name TEXT NOT NULL,
+    last_name TEXT,
+    is_banned BOOLEAN DEFAULT 0,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )
+`);
+
 export function getUserStat(userId: number, groupId: number): UserStat | null {
   const query = db.query<UserStat, [number, number]>(`
         SELECT
@@ -236,4 +249,83 @@ export function getGroups(adminId: number): { id: number; title: string }[] {
         FROM user_stats
     `);
   return query.all();
+}
+
+// User profile and ban management functions
+export interface UserProfile {
+  user_id: number;
+  username?: string;
+  first_name: string;
+  last_name?: string;
+  is_banned: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export function getUserProfile(userId: number): UserProfile | null {
+  const query = db.query<UserProfile, number>(`
+    SELECT user_id, username, first_name, last_name, is_banned, created_at, updated_at
+    FROM users
+    WHERE user_id = ?
+  `);
+  return query.get(userId);
+}
+
+export function upsertUserProfile(
+  userId: number,
+  username?: string,
+  firstName: string = "",
+  lastName?: string,
+  isBanned: boolean = false,
+): void {
+  const now = new Date().toISOString();
+  const existing = getUserProfile(userId);
+
+  if (existing) {
+    const query = db.prepare(`
+      UPDATE users
+      SET username = ?, first_name = ?, last_name = ?, is_banned = ?, updated_at = ?
+      WHERE user_id = ?
+    `);
+    query.run(username, firstName, lastName, isBanned ? 1 : 0, now, userId);
+  } else {
+    const query = db.prepare(`
+      INSERT INTO users (user_id, username, first_name, last_name, is_banned, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    query.run(
+      userId,
+      username,
+      firstName,
+      lastName,
+      isBanned ? 1 : 0,
+      now,
+      now,
+    );
+  }
+}
+
+export function banUser(userId: number): void {
+  const now = new Date().toISOString();
+  const query = db.prepare(`
+    UPDATE users
+    SET is_banned = 1, updated_at = ?
+    WHERE user_id = ?
+  `);
+  query.run(now, userId);
+}
+
+export function unbanUser(userId: number): void {
+  const now = new Date().toISOString();
+  const query = db.prepare(`
+    UPDATE users
+    SET is_banned = 0, updated_at = ?
+    WHERE user_id = ?
+  `);
+  query.run(now, userId);
+}
+
+export function isUserBanned(userId: number): boolean {
+  const profile = getUserProfile(userId);
+  return profile ? profile.is_banned : false;
 }

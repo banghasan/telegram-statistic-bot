@@ -12,6 +12,10 @@ import {
   getAggregatedUserStat,
   getTopUsers,
   getTotalUsersCount,
+  upsertUserProfile,
+  isUserBanned,
+  banUser,
+  unbanUser,
 } from "./database";
 
 const bot = new Bot(config.bot.token);
@@ -72,6 +76,23 @@ bot.on("message", async (context, next) => {
   // Only track in groups and supergroups, and only if a user is present
   if (chat.type === "private" || !from) return next();
 
+  // Check if user is banned and kick them from the group if they are
+  const isBanned = isUserBanned(from.id);
+  if (isBanned) {
+    try {
+      await context.kickChatMember({ user_id: from.id });
+      await context.reply(
+        "❌ You have been removed from this group because your account has been banned.",
+      );
+    } catch (kickError) {
+      console.error(
+        `Failed to kick banned user ${from.id} from group ${chat.id}:`,
+        kickError,
+      );
+    }
+    return next();
+  }
+
   const isText = !!text;
   const isSticker = !!sticker;
   // Simplified media check
@@ -96,6 +117,15 @@ bot.on("message", async (context, next) => {
     isMedia,
     wordCount: isText ? text.split(/\s+/).length : 0,
   });
+
+  // Update user profile as well
+  upsertUserProfile(
+    from.id,
+    from.username,
+    from.firstName,
+    from.lastName,
+    isBanned,
+  );
 
   return next();
 });
@@ -195,9 +225,9 @@ bot.command("web", async (context: Context) => {
     );
   }
 
-  const message = "🌐 Access the web app:";
+  const message = "🌐 Access the web app stats";
   const keyboard = new InlineKeyboard().webApp(
-    "Open Web App",
+    "📊 Open Web App",
     config.webapp.url,
   );
 
