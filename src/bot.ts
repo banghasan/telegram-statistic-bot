@@ -16,6 +16,7 @@ import {
   isUserBanned,
   banUser,
   unbanUser,
+  initializeDatabase,
 } from "./database";
 
 const bot = new Bot(config.bot.token);
@@ -77,7 +78,7 @@ bot.on("message", async (context, next) => {
   if (chat.type === "private" || !from) return next();
 
   // Check if user is banned and kick them from the group if they are
-  const isBanned = isUserBanned(from.id);
+  const isBanned = await isUserBanned(from.id);
   if (isBanned) {
     try {
       await context.kickChatMember({ user_id: from.id });
@@ -104,7 +105,7 @@ bot.on("message", async (context, next) => {
   // In `gramio`, `chat.username` is available for public groups/channels
   const groupUsername = "username" in chat ? chat.username : undefined;
 
-  upsertUserStat({
+  await upsertUserStat({
     userId: from.id,
     groupId: chat.id,
     username: from.username,
@@ -119,7 +120,7 @@ bot.on("message", async (context, next) => {
   });
 
   // Update user profile as well
-  upsertUserProfile(
+  await upsertUserProfile(
     from.id,
     from.username,
     from.firstName,
@@ -185,7 +186,7 @@ const statsCommandHandler = async (context: Context) => {
     });
   } else {
     // In a group chat, show the user's statistics directly
-    const userStats = getAggregatedUserStat(from.id);
+    const userStats = await getAggregatedUserStat(from.id);
 
     if (!userStats) {
       return context.reply(
@@ -197,11 +198,11 @@ const statsCommandHandler = async (context: Context) => {
     const message =
       `📊 *Your Statistics*\n\n` +
       `👤 Name: ${from.first_name}${from.last_name ? " " + from.last_name : ""}\n` +
-      `💬 Messages: ${userStats.message_count}\n` +
-      `📝 Words: ${userStats.word_count}\n` +
-      `📈 Avg. words/msg: ${userStats.average_words}\n` +
-      `🖼️ Media: ${userStats.media_count}\n` +
-      `😊 Stickers: ${userStats.sticker_count}`;
+      `💬 Messages: ${userStats.message_count || 0}\n` +
+      `📝 Words: ${userStats.word_count || 0}\n` +
+      `📈 Avg. words/msg: ${userStats.average_words || 0}\n` +
+      `🖼️ Media: ${userStats.media_count || 0}\n` +
+      `😊 Stickers: ${userStats.sticker_count || 0}`;
 
     await context.reply(message, { parse_mode: "Markdown" });
   }
@@ -267,7 +268,7 @@ async function webAppHandler(req: Request): Promise<Response> {
       });
     }
 
-    const stats = getAggregatedUserStat(user.id);
+    const stats = await getAggregatedUserStat(user.id);
     const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
 
     return new Response(JSON.stringify({ stats, isAdmin }), {
@@ -298,8 +299,9 @@ async function webAppHandler(req: Request): Promise<Response> {
     const limit = 10;
     const offset = (page - 1) * limit;
 
-    const users = getTopUsers({ limit, offset });
-    const totalUsers = getTotalUsersCount().count;
+    const users = await getTopUsers({ limit, offset });
+    const totalUsersResult = await getTotalUsersCount();
+    const totalUsers = totalUsersResult.count;
     const totalPages = Math.ceil(totalUsers / limit);
 
     return new Response(
@@ -315,6 +317,9 @@ async function webAppHandler(req: Request): Promise<Response> {
 
 // --- STARTUP ---
 async function start() {
+  // Initialize database
+  initializeDatabase(config.database);
+
   const botInfo = await bot.api.getMe();
   console.log(`Starting bot @${botInfo.username}...`);
 
