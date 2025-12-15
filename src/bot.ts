@@ -112,7 +112,9 @@ bot.command("ping", async (context) => {
   const endTime = performance.now();
   const responseTime = (endTime - startTime).toFixed(2);
 
-  await msg.editText(`Pong!\n${responseTime}ms`);
+  await msg.editText(`Pong!\n<code>${responseTime}</code> ms`, {
+    parse_mode: "HTML",
+  });
 });
 
 function formatDate(dateString: string, timeZone: string): string {
@@ -176,7 +178,34 @@ const statsCommandHandler = async (context: Context) => {
 };
 
 bot.command("stats", statsCommandHandler);
-bot.command("leaderboard", statsCommandHandler); // Alias /leaderboard to /stats
+
+// New /web command for private chat only
+bot.command("web", async (context: Context) => {
+  const { from, chat } = context;
+  if (!from) return;
+
+  // Only allow in private chat
+  if (chat.type !== "private") {
+    return;
+  }
+
+  if (!isWebAppConfigured()) {
+    return context.reply(
+      "⚠️ The web app is not configured yet. Please ask the bot administrator to set it up.",
+    );
+  }
+
+  const message = "🌐 Access the web app:";
+  const keyboard = new InlineKeyboard().webApp(
+    "Open Web App",
+    config.webapp.url,
+  );
+
+  await context.reply(message, {
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
+  });
+});
 
 // --- WEB SERVER LOGIC ---
 async function webAppHandler(req: Request): Promise<Response> {
