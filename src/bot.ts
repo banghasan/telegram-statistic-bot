@@ -13,6 +13,16 @@ import {
 
 const bot = new Bot(config.bot.token);
 
+// Helper function to check if webapp is configured
+function isWebAppConfigured(): boolean {
+  return !!(
+    config.webapp?.url &&
+    typeof config.webapp.url === "string" &&
+    config.webapp.url !== "YOUR_WEB_APP_URL" &&
+    config.webapp.url.startsWith("http")
+  );
+}
+
 // A middleware to verify the initData from Telegram
 const verifyTelegramWebAppData = async (req: Request) => {
   const header = req.headers.get("Telegram-Data");
@@ -76,11 +86,50 @@ bot.on("message", async (context, next) => {
 
   return next();
 });
-bot.command("start", (context) =>
-  context.reply(
+bot.command("start", async (context) => {
+  const payload = context.text?.split(" ")[1];
+
+  // Handle deep link for leaderboard
+  if (payload?.startsWith("leaderboard_")) {
+    const groupId = Number.parseInt(payload.replace("leaderboard_", ""));
+
+    if (!isWebAppConfigured()) {
+      return context.reply(
+        "⚠️ The leaderboard feature is not configured yet. Please contact the bot administrator.",
+      );
+    }
+
+    // Get group title
+    let groupTitle = `Group ${groupId}`;
+    try {
+      const chat = await bot.api.getChat({ chat_id: groupId });
+      if ("title" in chat && chat.title) groupTitle = chat.title;
+    } catch (e) {
+      console.warn(
+        `Could not fetch title for group ${groupId}:`,
+        e instanceof Error ? e.message : String(e),
+      );
+    }
+
+    // Send Mini App button in private chat (webApp works here!)
+    const keyboard = new InlineKeyboard().webApp(
+      "📊 View Group Leaderboard",
+      config.webapp.url,
+    );
+
+    return context.reply(
+      `🏆 *${groupTitle} Leaderboard*\n\nClick the button below to view the top 10 most active users!`,
+      {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+      },
+    );
+  }
+
+  return context.reply(
     "Welcome! I am a statistics bot. Add me to a group, and I will start tracking user activity. Use /stats to see your stats!",
-  ),
-);
+  );
+});
 
 bot.command("ping", async (context) => {
   const startTime = performance.now();
@@ -131,29 +180,51 @@ bot.command("stats", async (context) => {
     `🖼️ *Media*: ${stats.media_count}`,
     "",
     `_Last activity: ${formatDate(stats.updatedAt, config.timezone)}_`,
+    "",
+    "💡 _Use /leaderboard to see the group leaderboard_",
   ].join("\n");
-
-  const replyOptions: {
-    parse_mode: "Markdown";
-    reply_markup?: InlineKeyboard;
-  } = {
-    parse_mode: "Markdown",
-  };
-
-  // const isWebAppConfigured =
-  // 	config.webapp?.url && config.webapp.url !== "YOUR_WEB_APP_URL";
-
-  // if (isWebAppConfigured) {
-  // 	replyOptions.reply_markup = new InlineKeyboard().add({
-  // 		text: "📊 View Group Stats",
-  // 		web_app: { url: config.webapp.url },
-  // 	});
-  // }
 
   await bot.api.sendMessage({
     chat_id: context.chat.id,
     text: message,
-    ...replyOptions,
+    parse_mode: "Markdown",
+  });
+});
+
+bot.command("leaderboard", async (context) => {
+  const { from, chat } = context;
+  if (chat.type === "private" || !from) {
+    return context.reply("This command only works in groups!");
+  }
+
+  if (!isWebAppConfigured()) {
+    return context.reply(
+      "⚠️ The leaderboard feature is not configured yet. Please ask the bot administrator to set up the webapp URL in the config file.",
+    );
+  }
+
+  // Get bot username for deep link
+  const botInfo = await bot.api.getMe();
+  const deepLink = `https://t.me/${botInfo.username}?start=leaderboard_${chat.id}`;
+
+  const message = [
+    `🏆 *Group Leaderboard - ${chat.title}*`,
+    "",
+    "Click the button below to open the leaderboard Mini App!",
+    "",
+    "_Note: The app will open in a private chat with me for the best experience._",
+  ].join("\n");
+
+  const keyboard = new InlineKeyboard().url(
+    "📊 Open Leaderboard Mini App",
+    deepLink,
+  );
+
+  await bot.api.sendMessage({
+    chat_id: context.chat.id,
+    text: message,
+    parse_mode: "Markdown",
+    reply_markup: keyboard,
   });
 });
 
@@ -183,9 +254,12 @@ async function webAppHandler(req: Request): Promise<Response> {
     let groupTitle = `Group ${groupId}`;
     try {
       const chat = await bot.api.getChat({ chat_id: groupId });
-      if ("title" in chat) groupTitle = chat.title;
+      if ("title" in chat && chat.title) groupTitle = chat.title;
     } catch (e) {
-      console.warn(`Could not fetch title for group ${groupId}:`, e.message);
+      console.warn(
+        `Could not fetch title for group ${groupId}:`,
+        e instanceof Error ? e.message : String(e),
+      );
     }
 
     return new Response(JSON.stringify({ stats, groupTitle }), {
