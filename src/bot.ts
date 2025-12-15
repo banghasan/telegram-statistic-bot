@@ -134,29 +134,45 @@ function formatDate(dateString: string, timeZone: string): string {
 
 // This command now launches the main web app
 const statsCommandHandler = async (context: Context) => {
-  const { from } = context;
+  const { from, chat } = context;
   if (!from) return;
 
-  if (!isWebAppConfigured()) {
-    return context.reply(
-      "⚠️ The stats web app is not configured yet. Please ask the bot administrator to set it up.",
-    );
+  // Check if we're in a private chat
+  if (chat.type === "private") {
+    if (!isWebAppConfigured()) {
+      return context.reply(
+        "⚠️ The stats web app is not configured yet. Please ask the bot administrator to set it up.",
+      );
+    }
+
+    const message =
+      "📊 *Your Statistics Hub*\n\nOpen the web app to view your detailed statistics.";
+
+    await context.reply(message, {
+      parse_mode: "Markdown",
+    });
+  } else {
+    // In a group chat, show the user's statistics directly
+    const userStats = getAggregatedUserStat(from.id);
+
+    if (!userStats) {
+      return context.reply(
+        `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`,
+        { parse_mode: "Markdown" },
+      );
+    }
+
+    const message =
+      `📊 *Your Statistics*\n\n` +
+      `👤 Name: ${from.first_name}${from.last_name ? " " + from.last_name : ""}\n` +
+      `💬 Messages: ${userStats.message_count}\n` +
+      `📝 Words: ${userStats.word_count}\n` +
+      `📈 Avg. words/msg: ${userStats.average_words}\n` +
+      `🖼️ Media: ${userStats.media_count}\n` +
+      `😊 Stickers: ${userStats.sticker_count}`;
+
+    await context.reply(message, { parse_mode: "Markdown" });
   }
-
-  const message =
-    "📊 *Your Statistics Hub*\n\nClick the button below to open the web app and view your detailed statistics.";
-
-  const keyboard = new InlineKeyboard().webApp(
-    "🚀 Open Stats App",
-    config.webapp.url,
-  );
-
-  await bot.api.sendMessage({
-    chat_id: context.chat.id,
-    text: message,
-    parse_mode: "Markdown",
-    reply_markup: keyboard,
-  });
 };
 
 bot.command("stats", statsCommandHandler);
