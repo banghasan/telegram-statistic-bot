@@ -130,7 +130,7 @@ class DatabaseManager {
     `);
   }
 
-  async query(sql: string, params?: any[]) {
+  async query(sql: string, params?: unknown[]) {
     if (this.dbType === "sqlite") {
       if (!this.sqliteDb) throw new Error("SQLite database not initialized");
       return this.sqliteDb.query(sql).all(params || []);
@@ -141,7 +141,7 @@ class DatabaseManager {
     }
   }
 
-  async execute(sql: string, params?: any[]) {
+  async execute(sql: string, params?: unknown[]) {
     if (this.dbType === "sqlite") {
       if (!this.sqliteDb) throw new Error("SQLite database not initialized");
       return this.sqliteDb.query(sql).run(params || []);
@@ -173,12 +173,12 @@ export function getDatabase(): DatabaseManager {
 
 export async function getUserStat(
   userId: number,
-  groupId: number,
+  groupId: number
 ): Promise<UserStat | null> {
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult;
+  let queryResult: any[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -201,7 +201,7 @@ export async function getUserStat(
       FROM user_stats
       WHERE user_id = ? AND group_id = ?
     `,
-      [userId, groupId],
+      [userId, groupId]
     );
   } else {
     // mariadb
@@ -225,7 +225,7 @@ export async function getUserStat(
       FROM user_stats
       WHERE user_id = ? AND group_id = ?
     `,
-      [userId, groupId],
+      [userId, groupId]
     );
   }
 
@@ -251,12 +251,12 @@ export async function getUserStat(
 }
 
 export async function getAggregatedUserStat(
-  userId: number,
+  userId: number
 ): Promise<UserStat | null> {
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult;
+  let queryResult: any[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -277,7 +277,7 @@ export async function getAggregatedUserStat(
       WHERE user_id = ?
       GROUP BY user_id
     `,
-      [userId],
+      [userId]
     );
   } else {
     // mariadb
@@ -299,7 +299,7 @@ export async function getAggregatedUserStat(
       WHERE user_id = ?
       GROUP BY user_id
     `,
-      [userId],
+      [userId]
     );
   }
 
@@ -332,7 +332,7 @@ export async function getTopUsers({
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult;
+  let queryResult: any[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -354,7 +354,7 @@ export async function getTopUsers({
       ORDER BY message_count DESC
       LIMIT ? OFFSET ?
     `,
-      [limit, offset],
+      [limit, offset]
     );
   } else {
     // mariadb
@@ -377,7 +377,7 @@ export async function getTopUsers({
       ORDER BY message_count DESC
       LIMIT ? OFFSET ?
     `,
-      [limit, offset],
+      [limit, offset]
     );
   }
 
@@ -405,7 +405,7 @@ export async function getTotalUsersCount(): Promise<{ count: number }> {
   const db = getDatabase();
 
   const queryResult = await db.query(
-    `SELECT COUNT(DISTINCT user_id) as count FROM user_stats`,
+    `SELECT COUNT(DISTINCT user_id) as count FROM user_stats`
   );
 
   const result = queryResult.length > 0 ? queryResult[0] : { count: 0 };
@@ -417,12 +417,12 @@ export async function getTotalUsersCount(): Promise<{ count: number }> {
 
 export async function getGroupTopUsers(
   groupId: number,
-  limit = 10,
+  limit = 10
 ): Promise<UserStat[]> {
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult;
+  let queryResult: any[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -447,7 +447,7 @@ export async function getGroupTopUsers(
       ORDER BY message_count DESC
       LIMIT ?
     `,
-      [groupId, limit],
+      [groupId, limit]
     );
   } else {
     // mariadb
@@ -473,7 +473,7 @@ export async function getGroupTopUsers(
       ORDER BY message_count DESC
       LIMIT ?
     `,
-      [groupId, limit],
+      [groupId, limit]
     );
   }
 
@@ -550,7 +550,7 @@ export async function upsertUserStat(data: {
           now,
           data.userId,
           data.groupId,
-        ],
+        ]
       );
     } else {
       // mariadb
@@ -583,7 +583,7 @@ export async function upsertUserStat(data: {
           now,
           data.userId,
           data.groupId,
-        ],
+        ]
       );
     }
   } else {
@@ -621,7 +621,7 @@ export async function upsertUserStat(data: {
           data.isMedia ? 1 : 0,
           now,
           now,
-        ],
+        ]
       );
     } else {
       // mariadb
@@ -657,20 +657,20 @@ export async function upsertUserStat(data: {
           data.isMedia ? 1 : 0,
           now,
           now,
-        ],
+        ]
       );
     }
   }
 }
 
 export async function getGroups(
-  adminId: number,
+  _adminId: number
 ): Promise<{ id: number; title: string }[]> {
   // Now this can return more meaningful titles
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult;
+  let queryResult: any[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(`
@@ -700,7 +700,7 @@ export interface UserProfile {
 }
 
 export async function getUserProfile(
-  userId: number,
+  userId: number
 ): Promise<UserProfile | null> {
   const db = getDatabase();
 
@@ -710,7 +710,7 @@ export async function getUserProfile(
     FROM users
     WHERE user_id = ?
   `,
-    [userId],
+    [userId]
   );
 
   const result = queryResult.length > 0 ? queryResult[0] : null;
@@ -725,7 +725,7 @@ export async function upsertUserProfile(
   username?: string,
   firstName: string = "",
   lastName?: string,
-  isBanned: boolean = false,
+  isBanned: boolean = false
 ): Promise<void> {
   const now = new Date().toISOString().replace("T", " ").replace("Z", "");
   const existing = await getUserProfile(userId);
@@ -739,7 +739,7 @@ export async function upsertUserProfile(
       SET username = ?, first_name = ?, last_name = ?, is_banned = ?, updated_at = ?
       WHERE user_id = ?
     `,
-      [username, firstName, lastName, isBanned ? 1 : 0, now, userId],
+      [username, firstName, lastName, isBanned ? 1 : 0, now, userId]
     );
   } else {
     await db.execute(
@@ -747,7 +747,7 @@ export async function upsertUserProfile(
       INSERT INTO users (user_id, username, first_name, last_name, is_banned, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `,
-      [userId, username, firstName, lastName, isBanned ? 1 : 0, now, now],
+      [userId, username, firstName, lastName, isBanned ? 1 : 0, now, now]
     );
   }
 }
@@ -762,7 +762,7 @@ export async function banUser(userId: number): Promise<void> {
     SET is_banned = 1, updated_at = ?
     WHERE user_id = ?
   `,
-    [now, userId],
+    [now, userId]
   );
 }
 
@@ -776,7 +776,7 @@ export async function unbanUser(userId: number): Promise<void> {
     SET is_banned = 0, updated_at = ?
     WHERE user_id = ?
   `,
-    [now, userId],
+    [now, userId]
   );
 }
 

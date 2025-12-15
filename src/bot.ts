@@ -1,22 +1,17 @@
-import { Bot, Context } from "gramio";
+import crypto from "node:crypto";
+import { resolve } from "node:path";
 import { InlineKeyboard } from "@gramio/keyboards";
-import { resolve } from "path";
-import crypto from "crypto";
+import { Bot, type Context } from "gramio";
 
 import config from "./config";
 import {
-  getGroupTopUsers,
-  getGroups,
-  getUserStat,
-  upsertUserStat,
   getAggregatedUserStat,
   getTopUsers,
   getTotalUsersCount,
-  upsertUserProfile,
-  isUserBanned,
-  banUser,
-  unbanUser,
   initializeDatabase,
+  isUserBanned,
+  upsertUserProfile,
+  upsertUserStat,
 } from "./database";
 
 const bot = new Bot(config.bot.token);
@@ -31,13 +26,25 @@ function isWebAppConfigured(): boolean {
   );
 }
 
+interface TelegramWebAppRequest extends Request {
+  user?: {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    language_code?: string;
+    is_premium?: boolean;
+    allows_write_to_pm?: boolean;
+  };
+}
+
 // A middleware to verify the initData from Telegram
 const verifyTelegramWebAppData = async (req: Request) => {
   const header = req.headers.get("Telegram-Data");
   if (!header) {
     return new Response(
       JSON.stringify({ error: "Not a Telegram Web App request" }),
-      { status: 401 },
+      { status: 401 }
     );
   }
 
@@ -66,7 +73,9 @@ const verifyTelegramWebAppData = async (req: Request) => {
   }
 
   // Attach user data to the request for later use
-  (req as any).user = JSON.parse(urlParams.get("user") || "{}");
+  (req as TelegramWebAppRequest).user = JSON.parse(
+    urlParams.get("user") || "{}"
+  );
   return null; // Indicates success
 };
 
@@ -83,12 +92,12 @@ bot.on("message", async (context, next) => {
     try {
       await context.kickChatMember({ user_id: from.id });
       await context.reply(
-        "❌ You have been removed from this group because your account has been banned.",
+        "❌ You have been removed from this group because your account has been banned."
       );
     } catch (kickError) {
       console.error(
         `Failed to kick banned user ${from.id} from group ${chat.id}:`,
-        kickError,
+        kickError
       );
     }
     return next();
@@ -125,7 +134,7 @@ bot.on("message", async (context, next) => {
     from.username,
     from.firstName,
     from.lastName,
-    isBanned,
+    isBanned
   );
 
   return next();
@@ -133,7 +142,7 @@ bot.on("message", async (context, next) => {
 
 bot.command("start", (context) => {
   return context.reply(
-    "Welcome! I'm a statistics bot. Add me to a group, and I'll start tracking user activity. Use /stats to view the stats web app!",
+    "Welcome! I'm a statistics bot. Add me to a group, and I'll start tracking user activity. Use /stats to view the stats web app!"
   );
 });
 
@@ -148,7 +157,7 @@ bot.command("ping", async (context) => {
   });
 });
 
-function formatDate(dateString: string, timeZone: string): string {
+function _formatDate(dateString: string, timeZone: string): string {
   const date = new Date(dateString);
   const formatter = new Intl.DateTimeFormat("id-ID", {
     year: "numeric",
@@ -176,12 +185,12 @@ const statsCommandHandler = async (context: Context) => {
     const userStats = await getAggregatedUserStat(from.id);
 
     if (!userStats) {
-      let message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
+      const message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
 
       if (isWebAppConfigured()) {
         const keyboard = new InlineKeyboard().webApp(
           "🌐 Open Web App",
-          config.webapp.url,
+          config.webapp.url
         );
         await context.reply(message, {
           parse_mode: "Markdown",
@@ -195,7 +204,7 @@ const statsCommandHandler = async (context: Context) => {
     } else {
       const message =
         `📊 *Your Statistics*\n\n` +
-        `👤 Name: ${from.first_name}${from.last_name ? " " + from.last_name : ""}\n` +
+        `👤 Name: ${from.first_name}${from.last_name ? ` ${from.last_name}` : ""}\n` +
         `💬 Messages: ${userStats.message_count || 0}\n` +
         `📝 Words: ${userStats.word_count || 0}\n` +
         `📈 Avg. words/msg: ${userStats.average_words || 0}\n` +
@@ -205,7 +214,7 @@ const statsCommandHandler = async (context: Context) => {
       if (isWebAppConfigured()) {
         const keyboard = new InlineKeyboard().webApp(
           "🌐 Open Web App",
-          config.webapp.url,
+          config.webapp.url
         );
         await context.reply(message, {
           parse_mode: "Markdown",
@@ -224,13 +233,13 @@ const statsCommandHandler = async (context: Context) => {
     if (!userStats) {
       return context.reply(
         `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`,
-        { parse_mode: "Markdown" },
+        { parse_mode: "Markdown" }
       );
     }
 
     const message =
       `📊 *Your Statistics*\n\n` +
-      `👤 Name: ${from.first_name}${from.last_name ? " " + from.last_name : ""}\n` +
+      `👤 Name: ${from.first_name}${from.last_name ? ` ${from.last_name}` : ""}\n` +
       `💬 Messages: ${userStats.message_count || 0}\n` +
       `📝 Words: ${userStats.word_count || 0}\n` +
       `📈 Avg. words/msg: ${userStats.average_words || 0}\n` +
@@ -255,14 +264,14 @@ bot.command("web", async (context: Context) => {
 
   if (!isWebAppConfigured()) {
     return context.reply(
-      "⚠️ The web app is not configured yet. Please ask the bot administrator to set it up.",
+      "⚠️ The web app is not configured yet. Please ask the bot administrator to set it up."
     );
   }
 
   const message = "🌐 Access the web app stats";
   const keyboard = new InlineKeyboard().webApp(
     "📊 Open Web App",
-    config.webapp.url,
+    config.webapp.url
   );
 
   await context.reply(message, {
@@ -279,7 +288,7 @@ async function webAppHandler(req: Request): Promise<Response> {
   // Serve static files for the web app
   if (pathname === "/") {
     return new Response(
-      Bun.file(resolve(import.meta.dir, "webapp/index.html")),
+      Bun.file(resolve(import.meta.dir, "webapp/index.html"))
     );
   }
   if (pathname === "/style.css") {
@@ -294,7 +303,7 @@ async function webAppHandler(req: Request): Promise<Response> {
     const verification = await verifyTelegramWebAppData(req);
     if (verification) return verification;
 
-    const user = (req as any).user;
+    const user = (req as TelegramWebAppRequest).user;
     if (!user?.id) {
       return new Response(JSON.stringify({ error: "User not identified" }), {
         status: 401,
@@ -314,7 +323,7 @@ async function webAppHandler(req: Request): Promise<Response> {
     const verification = await verifyTelegramWebAppData(req);
     if (verification) return verification;
 
-    const user = (req as any).user;
+    const user = (req as TelegramWebAppRequest).user;
     if (!user?.id) {
       return new Response(JSON.stringify({ error: "User not identified" }), {
         status: 401,
@@ -341,7 +350,7 @@ async function webAppHandler(req: Request): Promise<Response> {
       JSON.stringify({ users, totalPages, currentPage: page }),
       {
         headers: { "Content-Type": "application/json" },
-      },
+      }
     );
   }
 
@@ -377,7 +386,7 @@ async function start() {
 
       await bot.api.setWebhook({ url: config.bot.webhook.url });
       console.log(
-        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`,
+        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`
       );
     } else {
       // Polling mode
@@ -392,7 +401,7 @@ async function start() {
 
       bot.start(); // Start polling
       console.log(
-        `Web server for Mini App listening on http://${host}:${port}`,
+        `Web server for Mini App listening on http://${host}:${port}`
       );
     }
   } catch (error) {

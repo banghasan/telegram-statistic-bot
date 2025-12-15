@@ -22,7 +22,7 @@ window.addEventListener("load", () => {
   // --- State ---
   let currentPage = 1;
   let totalPages = 1;
-  let currentUser = tg.initDataUnsafe?.user;
+  const currentUser = tg.initDataUnsafe?.user;
 
   // --- Functions ---
   const showView = (view) => {
@@ -69,7 +69,7 @@ window.addEventListener("load", () => {
             <div class="stat-card">
                 <div class="label">${s.label}</div>
                 <div class="value">${s.value.toLocaleString("en-US")}</div>
-            </div>`,
+            </div>`
       )
       .join("");
   };
@@ -92,7 +92,7 @@ window.addEventListener("load", () => {
                 <td>${user.sticker_count.toLocaleString("en-US")}</td>
                 <td>${user.media_count.toLocaleString("en-US")}</td>
             </tr>
-        `,
+        `
       )
       .join("");
   };
@@ -127,31 +127,31 @@ window.addEventListener("load", () => {
       // Set theme colors from Telegram
       document.documentElement.style.setProperty(
         "--bg-color",
-        tg.themeParams.bg_color || "#ffffff",
+        tg.themeParams.bg_color || "#ffffff"
       );
       document.documentElement.style.setProperty(
         "--text-color",
-        tg.themeParams.text_color || "#000000",
+        tg.themeParams.text_color || "#000000"
       );
       document.documentElement.style.setProperty(
         "--hint-color",
-        tg.themeParams.hint_color || "#999999",
+        tg.themeParams.hint_color || "#999999"
       );
       document.documentElement.style.setProperty(
         "--link-color",
-        tg.themeParams.link_color || "#2481cc",
+        tg.themeParams.link_color || "#2481cc"
       );
       document.documentElement.style.setProperty(
         "--button-color",
-        tg.themeParams.button_color || "#2481cc",
+        tg.themeParams.button_color || "#2481cc"
       );
       document.documentElement.style.setProperty(
         "--button-text-color",
-        tg.themeParams.button_text_color || "#ffffff",
+        tg.themeParams.button_text_color || "#ffffff"
       );
       document.documentElement.style.setProperty(
         "--secondary-bg-color",
-        tg.themeParams.secondary_bg_color || "#f4f4f5",
+        tg.themeParams.secondary_bg_color || "#f4f4f5"
       );
 
       const data = await apiFetch("/api/stats");

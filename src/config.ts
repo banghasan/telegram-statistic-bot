@@ -1,5 +1,5 @@
+import fs from "node:fs";
 import yaml from "js-yaml";
-import fs from "fs";
 import { merge } from "lodash";
 
 interface BotConfig {
@@ -44,10 +44,10 @@ let loadedConfig: Partial<Config>;
 try {
   const configFile = fs.readFileSync("config.yml", "utf8");
   loadedConfig = yaml.load(configFile) as Config;
-} catch (e) {
+} catch (_e) {
   console.error("Error reading or parsing config.yml file.");
   console.error(
-    "Please make sure 'config.yml' exists and is a valid YAML file.",
+    "Please make sure 'config.yml' exists and is a valid YAML file."
   );
   console.error("You can copy 'config.example.yml' to get started.");
   process.exit(1);
@@ -74,7 +74,7 @@ if (!config.bot?.token || config.bot.token === "YOUR_BOT_TOKEN") {
 
 if (!config.bot.mode || !["polling", "webhook"].includes(config.bot.mode)) {
   console.error(
-    "Bot mode must be set to either 'polling' or 'webhook' in config.yml (bot.mode)",
+    "Bot mode must be set to either 'polling' or 'webhook' in config.yml (bot.mode)"
   );
   process.exit(1);
 }
