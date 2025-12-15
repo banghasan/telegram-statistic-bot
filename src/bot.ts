@@ -9,6 +9,9 @@ import {
   getGroups,
   getUserStat,
   upsertUserStat,
+  getAggregatedUserStat,
+  getTopUsers,
+  getTotalUsersCount,
 } from "./database";
 
 const bot = new Bot(config.bot.token);
