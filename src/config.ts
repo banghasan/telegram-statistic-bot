@@ -10,7 +10,7 @@ interface BotConfig {
   };
 }
 
-interface DatabaseConfig {
+export interface DatabaseConfig {
   type: "sqlite" | "mariadb";
   host?: string;
   port?: number;
@@ -65,7 +65,7 @@ const defaultConfig: Partial<Config> = {
   },
 };
 
-const config: Config = merge(defaultConfig, loadedConfig);
+const config: Config = merge(defaultConfig, loadedConfig) as unknown as Config;
 
 if (!config.bot?.token || config.bot.token === "YOUR_BOT_TOKEN") {
   console.error("Bot token is not configured in config.yml (bot.token)");

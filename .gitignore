@@ -24,7 +24,11 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 config.yml
 catatan/
-db/
+# Ignore the actual database file directory but allow source code
+/db/
+# !src/db/
+
+
 
 # caches
 .eslintcache

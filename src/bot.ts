@@ -1,7 +1,7 @@
 import { Bot } from "gramio";
 import { loadCommands } from "./commands";
 import config from "./config";
-import { initializeDatabase } from "./database";
+import { initializeDatabase } from "./db";
 import app from "./web";
 
 // Initialize database
