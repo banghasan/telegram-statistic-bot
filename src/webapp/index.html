@@ -1,40 +1,69 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Group Statistics</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-</head>
-<body>
-    <div id="loader">Loading...</div>
-    <div id="error"></div>
-    <div id="main" style="display: none;">
-        <h1 id="group-title">Group Statistics</h1>
-        <div id="admin-controls" style="display: none;">
-            <label for="group-select">Select Group:</label>
-            <select id="group-select"></select>
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>User Statistics</title>
+        <link rel="stylesheet" href="style.css" />
+        <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    </head>
+    <body>
+        <div id="loader">
+            <div class="spinner"></div>
+            Loading your statistics...
         </div>
-        <div class="leaderboard-container">
-            <table>
-                <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>User</th>
-                        <th>Messages</th>
-                        <th>Words</th>
-                        <th>Avg Words</th>
-                        <th>Stickers</th>
-                        <th>Media</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard">
-                    <!-- Data will be inserted here -->
-                </tbody>
-            </table>
+        <div id="error-view" style="display: none">
+            <h2>Something went wrong</h2>
+            <p id="error-message"></p>
+            <button id="retry-button">Retry</button>
         </div>
-    </div>
-    <script src="script.js"></script>
-</body>
+
+        <div id="main-view" style="display: none">
+            <!-- User's Personal Stats -->
+            <div id="user-stats-container">
+                <div class="header">
+                    <h1 id="user-greeting">Hello, User!</h1>
+                    <p>
+                        Here are your aggregated statistics across all groups.
+                    </p>
+                </div>
+                <div id="user-stats-grid" class="stats-grid">
+                    <!-- Stats will be dynamically inserted here -->
+                </div>
+            </div>
+
+            <!-- Admin-only Top Users Leaderboard -->
+            <div id="admin-leaderboard-container" style="display: none">
+                <div class="header">
+                    <h2>Top 100 Active Users</h2>
+                    <p>This panel is visible only to administrators.</p>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>User</th>
+                                <th>Username</th>
+                                <th>Messages</th>
+                                <th>Words</th>
+                                <th>Stickers</th>
+                                <th>Media</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <!-- Data will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="pagination-controls">
+                    <button id="prev-page" disabled>Previous</button>
+                    <span id="page-info">Page 1 of 1</span>
+                    <button id="next-page" disabled>Next</button>
+                </div>
+            </div>
+        </div>
+
+        <script src="script.js"></script>
+    </body>
 </html>

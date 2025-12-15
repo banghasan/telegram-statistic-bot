@@ -66,18 +66,28 @@ const verifyTelegramWebAppData = async (req: Request) => {
 // Middleware to track user stats
 bot.on("message", async (context, next) => {
   const { from, chat, text, sticker, photo, video, document, audio } = context;
+  // Only track in groups and supergroups, and only if a user is present
   if (chat.type === "private" || !from) return next();
 
   const isText = !!text;
   const isSticker = !!sticker;
-  const isMedia = !!photo || !!video || !!document || !!audio;
+  // Simplified media check
+  const isMedia = !!(photo || video || document || audio);
+
+  // Don't track if it's not a message type we are interested in
   if (!isText && !isSticker && !isMedia) return next();
+
+  // In `gramio`, `chat.username` is available for public groups/channels
+  const groupUsername = "username" in chat ? chat.username : undefined;
 
   upsertUserStat({
     userId: from.id,
     groupId: chat.id,
+    username: from.username,
     firstName: from.firstName,
     lastName: from.lastName,
+    groupTitle: chat.title,
+    groupUsername: groupUsername,
     isText,
     isSticker,
     isMedia,
@@ -86,48 +96,10 @@ bot.on("message", async (context, next) => {
 
   return next();
 });
-bot.command("start", async (context) => {
-  const payload = context.text?.split(" ")[1];
 
-  // Handle deep link for leaderboard
-  if (payload?.startsWith("leaderboard_")) {
-    const groupId = Number.parseInt(payload.replace("leaderboard_", ""));
-
-    if (!isWebAppConfigured()) {
-      return context.reply(
-        "⚠️ The leaderboard feature is not configured yet. Please contact the bot administrator.",
-      );
-    }
-
-    // Get group title
-    let groupTitle = `Group ${groupId}`;
-    try {
-      const chat = await bot.api.getChat({ chat_id: groupId });
-      if ("title" in chat && chat.title) groupTitle = chat.title;
-    } catch (e) {
-      console.warn(
-        `Could not fetch title for group ${groupId}:`,
-        e instanceof Error ? e.message : String(e),
-      );
-    }
-
-    // Send Mini App button in private chat (webApp works here!)
-    const keyboard = new InlineKeyboard().webApp(
-      "📊 View Group Leaderboard",
-      config.webapp.url,
-    );
-
-    return context.reply(
-      `🏆 *${groupTitle} Leaderboard*\n\nClick the button below to view the top 10 most active users!`,
-      {
-        parse_mode: "Markdown",
-        reply_markup: keyboard,
-      },
-    );
-  }
-
+bot.command("start", (context) => {
   return context.reply(
-    "Welcome! I am a statistics bot. Add me to a group, and I will start tracking user activity. Use /stats to see your stats!",
+    "Welcome! I'm a statistics bot. Add me to a group, and I'll start tracking user activity. Use /stats to view the stats web app!",
   );
 });
 
@@ -157,67 +129,23 @@ function formatDate(dateString: string, timeZone: string): string {
   return formatter.format(date);
 }
 
-bot.command("stats", async (context) => {
-  const { from, chat } = context;
-  if (chat.type === "private" || !from) {
-    return context.reply("This command only works in groups!");
-  }
-
-  const stats = getUserStat(from.id, chat.id);
-  if (!stats) {
-    return context.reply(
-      "No stats found for you in this group yet. Send some messages first!",
-    );
-  }
-
-  const message = [
-    `📊 *Your Stats in ${chat.title}*`,
-    "",
-    `💬 *Messages*: ${stats.message_count}`,
-    `✍️ *Words*: ${stats.word_count}`,
-    `📈 *Avg. Words/Msg*: ${stats.average_words}`,
-    `🎨 *Stickers*: ${stats.sticker_count}`,
-    `🖼️ *Media*: ${stats.media_count}`,
-    "",
-    `_Last activity: ${formatDate(stats.updatedAt, config.timezone)}_`,
-    "",
-    "💡 _Use /leaderboard to see the group leaderboard_",
-  ].join("\n");
-
-  await bot.api.sendMessage({
-    chat_id: context.chat.id,
-    text: message,
-    parse_mode: "Markdown",
-  });
-});
-
-bot.command("leaderboard", async (context) => {
-  const { from, chat } = context;
-  if (chat.type === "private" || !from) {
-    return context.reply("This command only works in groups!");
-  }
+// This command now launches the main web app
+const statsCommandHandler = async (context: Context) => {
+  const { from } = context;
+  if (!from) return;
 
   if (!isWebAppConfigured()) {
     return context.reply(
-      "⚠️ The leaderboard feature is not configured yet. Please ask the bot administrator to set up the webapp URL in the config file.",
+      "⚠️ The stats web app is not configured yet. Please ask the bot administrator to set it up.",
     );
   }
 
-  // Get bot username for deep link
-  const botInfo = await bot.api.getMe();
-  const deepLink = `https://t.me/${botInfo.username}?start=leaderboard_${chat.id}`;
+  const message =
+    "📊 *Your Statistics Hub*\n\nClick the button below to open the web app and view your detailed statistics.";
 
-  const message = [
-    `🏆 *Group Leaderboard - ${chat.title}*`,
-    "",
-    "Click the button below to open the leaderboard Mini App!",
-    "",
-    "_Note: The app will open in a private chat with me for the best experience._",
-  ].join("\n");
-
-  const keyboard = new InlineKeyboard().url(
-    "📊 Open Leaderboard Mini App",
-    deepLink,
+  const keyboard = new InlineKeyboard().webApp(
+    "🚀 Open Stats App",
+    config.webapp.url,
   );
 
   await bot.api.sendMessage({
@@ -226,69 +154,82 @@ bot.command("leaderboard", async (context) => {
     parse_mode: "Markdown",
     reply_markup: keyboard,
   });
-});
+};
+
+bot.command("stats", statsCommandHandler);
+bot.command("leaderboard", statsCommandHandler); // Alias /leaderboard to /stats
 
 // --- WEB SERVER LOGIC ---
 async function webAppHandler(req: Request): Promise<Response> {
   const url = new URL(req.url);
-  const pathname = url.pathname;
+  const { pathname, searchParams } = url;
 
-  // Serve static files
-  if (pathname === "/")
+  // Serve static files for the web app
+  if (pathname === "/") {
     return new Response(
       Bun.file(resolve(import.meta.dir, "webapp/index.html")),
     );
-  if (pathname === "/style.css")
+  }
+  if (pathname === "/style.css") {
     return new Response(Bun.file(resolve(import.meta.dir, "webapp/style.css")));
-  if (pathname === "/script.js")
+  }
+  if (pathname === "/script.js") {
     return new Response(Bun.file(resolve(import.meta.dir, "webapp/script.js")));
+  }
 
-  // API: Get group stats
-  const statsMatch = pathname.match(/^\/api\/stats\/(-?\d+)$/);
-  if (statsMatch) {
+  // API: Get aggregated stats for the current user
+  if (pathname === "/api/stats") {
     const verification = await verifyTelegramWebAppData(req);
     if (verification) return verification;
 
-    const groupId = Number(statsMatch[1]);
-    const stats = getGroupTopUsers(groupId, 10);
-    let groupTitle = `Group ${groupId}`;
-    try {
-      const chat = await bot.api.getChat({ chat_id: groupId });
-      if ("title" in chat && chat.title) groupTitle = chat.title;
-    } catch (e) {
-      console.warn(
-        `Could not fetch title for group ${groupId}:`,
-        e instanceof Error ? e.message : String(e),
-      );
+    const user = (req as any).user;
+    if (!user?.id) {
+      return new Response(JSON.stringify({ error: "User not identified" }), {
+        status: 401,
+      });
     }
 
-    return new Response(JSON.stringify({ stats, groupTitle }), {
+    const stats = getAggregatedUserStat(user.id);
+    const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
+
+    return new Response(JSON.stringify({ stats, isAdmin }), {
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // API: Get groups for admins
-  if (pathname === "/api/admin/groups") {
+  // API: Get top 100 users for admins with pagination
+  if (pathname === "/api/top-users") {
     const verification = await verifyTelegramWebAppData(req);
     if (verification) return verification;
 
-    const userId = (req as any).user?.id;
-    if (!userId)
+    const user = (req as any).user;
+    if (!user?.id) {
       return new Response(JSON.stringify({ error: "User not identified" }), {
         status: 401,
       });
+    }
 
-    const isAdmin = config.admins.includes(userId) || config.owner === userId;
-    if (!isAdmin)
-      return new Response(JSON.stringify({ groups: [] }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
+    const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 403,
       });
+    }
 
-    const groups = getGroups(userId);
-    return new Response(JSON.stringify({ groups }), {
-      headers: { "Content-Type": "application/json" },
-    });
+    const page = Number(searchParams.get("page") || "1");
+    const limit = 10;
+    const offset = (page - 1) * limit;
+
+    const users = getTopUsers({ limit, offset });
+    const totalUsers = getTotalUsersCount().count;
+    const totalPages = Math.ceil(totalUsers / limit);
+
+    return new Response(
+      JSON.stringify({ users, totalPages, currentPage: page }),
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   }
 
   return new Response("Not Found", { status: 404 });

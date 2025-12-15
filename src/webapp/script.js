@@ -1,136 +1,193 @@
 window.addEventListener("load", () => {
-	const tg = window.Telegram.WebApp;
-	tg.ready();
-	tg.expand();
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
 
-	const loader = document.getElementById("loader");
-	const errorEl = document.getElementById("error");
-	const mainEl = document.getElementById("main");
-	const groupTitleEl = document.getElementById("group-title");
-	const leaderboardEl = document.getElementById("leaderboard");
-	const adminControlsEl = document.getElementById("admin-controls");
-	const groupSelectEl = document.getElementById("group-select");
+  // --- DOM Elements ---
+  const loader = document.getElementById("loader");
+  const errorView = document.getElementById("error-view");
+  const errorMessage = document.getElementById("error-message");
+  const retryButton = document.getElementById("retry-button");
+  const mainView = document.getElementById("main-view");
 
-	const initData = tg.initDataUnsafe || {};
-	const user = initData.user;
-	const chat = initData.chat;
+  const userGreeting = document.getElementById("user-greeting");
+  const userStatsGrid = document.getElementById("user-stats-grid");
 
-	function showError(message) {
-		loader.style.display = "none";
-		mainEl.style.display = "none";
-		errorEl.textContent = message;
-		errorEl.style.display = "block";
-	}
+  const adminView = document.getElementById("admin-leaderboard-container");
+  const leaderboardBody = document.getElementById("leaderboard-body");
+  const pageInfo = document.getElementById("page-info");
+  const prevButton = document.getElementById("prev-page");
+  const nextButton = document.getElementById("next-page");
 
-	async function fetchAndRenderStats(groupId) {
-		loader.style.display = "block";
-		mainEl.style.display = "none";
-		leaderboardEl.innerHTML = ""; // Clear previous stats
+  // --- State ---
+  let currentPage = 1;
+  let totalPages = 1;
+  let currentUser = tg.initDataUnsafe?.user;
 
-		try {
-			// We'll need to pass the initData to the backend for validation
-			const response = await fetch(`/api/stats/${groupId}`, {
-				headers: {
-					"Content-Type": "application/json",
-					"Telegram-Data": tg.initData,
-				},
-			});
+  // --- Functions ---
+  const showView = (view) => {
+    loader.style.display = "none";
+    errorView.style.display = view === "error" ? "block" : "none";
+    mainView.style.display = view === "main" ? "block" : "none";
+  };
 
-			if (!response.ok) {
-				const err = await response.json();
-				throw new Error(err.error || `HTTP error! status: ${response.status}`);
-			}
+  const showError = (message) => {
+    errorMessage.textContent = message;
+    showView("error");
+  };
 
-			const data = await response.json();
+  const apiFetch = async (endpoint) => {
+    const response = await fetch(endpoint, {
+      headers: {
+        "Content-Type": "application/json",
+        "Telegram-Data": tg.initData,
+      },
+    });
+    if (!response.ok) {
+      const errData = await response.json();
+      throw new Error(errData.error || `API Error: ${response.status}`);
+    }
+    return response.json();
+  };
 
-			if (data.groupTitle) {
-				groupTitleEl.textContent = data.groupTitle;
-			}
+  const renderUserStats = (stats) => {
+    if (!stats) {
+      userStatsGrid.innerHTML =
+        "<p>We couldn't find any stats for you. Start by sending some messages in a group!</p>";
+      return;
+    }
+    const statsMap = [
+      { label: "Messages", value: stats.message_count },
+      { label: "Words", value: stats.word_count },
+      { label: "Avg. Words/Msg", value: stats.average_words },
+      { label: "Stickers", value: stats.sticker_count },
+      { label: "Media", value: stats.media_count },
+    ];
+    userStatsGrid.innerHTML = statsMap
+      .map(
+        (s) => `
+            <div class="stat-card">
+                <div class="label">${s.label}</div>
+                <div class="value">${s.value.toLocaleString("en-US")}</div>
+            </div>`,
+      )
+      .join("");
+  };
 
-			renderLeaderboard(data.stats);
-
-			loader.style.display = "none";
-			mainEl.style.display = "block";
-			tg.MainButton.hide();
-		} catch (error) {
-			console.error("Error fetching stats:", error);
-			showError(`Failed to load stats. ${error.message}`);
-			tg.MainButton.show()
-				.setText("Retry")
-				.onClick(() => fetchAndRenderStats(groupId));
-		}
-	}
-
-	function renderLeaderboard(stats) {
-		if (!stats || stats.length === 0) {
-			leaderboardEl.innerHTML =
-				'<tr><td colspan="7">No activity recorded in this group yet.</td></tr>';
-			return;
-		}
-
-		leaderboardEl.innerHTML = stats
-			.map(
-				(user, index) => `
+  const renderAdminLeaderboard = (users) => {
+    if (!users || users.length === 0) {
+      leaderboardBody.innerHTML =
+        '<tr><td colspan="7">No users found.</td></tr>';
+      return;
+    }
+    leaderboardBody.innerHTML = users
+      .map(
+        (user, index) => `
             <tr>
-                <td>${index + 1}</td>
+                <td>${(currentPage - 1) * 10 + index + 1}</td>
                 <td class="user-cell">${user.first_name || ""} ${user.last_name || ""}</td>
-                <td>${user.message_count}</td>
-                <td>${user.word_count}</td>
-                <td>${user.average_words}</td>
-                <td>${user.sticker_count}</td>
-                <td>${user.media_count}</td>
+                <td>${user.username ? `@${user.username}` : "-"}</td>
+                <td>${user.message_count.toLocaleString("en-US")}</td>
+                <td>${user.word_count.toLocaleString("en-US")}</td>
+                <td>${user.sticker_count.toLocaleString("en-US")}</td>
+                <td>${user.media_count.toLocaleString("en-US")}</td>
             </tr>
         `,
-			)
-			.join("");
-	}
+      )
+      .join("");
+  };
 
-	async function initialize() {
-		if (!chat || !chat.id) {
-			// For local testing if not launched from Telegram
-			console.warn("Not launched from Telegram or chat info is missing.");
-			showError(
-				"Please open this web app from the /stats command in a Telegram group.",
-			);
-			groupTitleEl.textContent = "Local Test";
-			const testGroupId = -1001234567890; // Example group ID
-			await setupAdminControls(user?.id);
-			await fetchAndRenderStats(testGroupId);
-			return;
-		}
+  const updatePagination = (newCurrentPage, newTotalPages) => {
+    currentPage = newCurrentPage;
+    totalPages = newTotalPages;
+    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    prevButton.disabled = currentPage === 1;
+    nextButton.disabled = currentPage === totalPages;
+  };
 
-		groupTitleEl.textContent = `Top 10 Users in ${chat.title}`;
+  const fetchTopUsers = async (page) => {
+    try {
+      const data = await apiFetch(`/api/top-users?page=${page}`);
+      renderAdminLeaderboard(data.users);
+      updatePagination(data.currentPage, data.totalPages);
+    } catch (error) {
+      // Don't show a full error screen, just log it,
+      // as the main user stats are still visible.
+      console.error("Failed to load top users:", error);
+      leaderboardBody.innerHTML = `<tr><td colspan="7">Error loading leaderboard.</td></tr>`;
+    }
+  };
 
-		await setupAdminControls(user?.id);
-		await fetchAndRenderStats(chat.id);
+  const initialize = async () => {
+    try {
+      if (!tg.initData) {
+        throw new Error("This application must be launched from Telegram.");
+      }
 
-		groupSelectEl.addEventListener("change", (e) => {
-			const selectedGroupId = e.target.value;
-			fetchAndRenderStats(selectedGroupId);
-		});
-	}
+      // Set theme colors from Telegram
+      document.documentElement.style.setProperty(
+        "--bg-color",
+        tg.themeParams.bg_color || "#ffffff",
+      );
+      document.documentElement.style.setProperty(
+        "--text-color",
+        tg.themeParams.text_color || "#000000",
+      );
+      document.documentElement.style.setProperty(
+        "--hint-color",
+        tg.themeParams.hint_color || "#999999",
+      );
+      document.documentElement.style.setProperty(
+        "--link-color",
+        tg.themeParams.link_color || "#2481cc",
+      );
+      document.documentElement.style.setProperty(
+        "--button-color",
+        tg.themeParams.button_color || "#2481cc",
+      );
+      document.documentElement.style.setProperty(
+        "--button-text-color",
+        tg.themeParams.button_text_color || "#ffffff",
+      );
+      document.documentElement.style.setProperty(
+        "--secondary-bg-color",
+        tg.themeParams.secondary_bg_color || "#f4f4f5",
+      );
 
-	async function setupAdminControls(userId) {
-		try {
-			const response = await fetch(`/api/admin/groups?userId=${userId}`, {
-				headers: { "Telegram-Data": tg.initData },
-			});
-			if (response.ok) {
-				const { groups } = await response.json();
-				if (groups && groups.length > 0) {
-					groupSelectEl.innerHTML = groups
-						.map(
-							(g) =>
-								`<option value="${g.id}" ${g.id === (chat?.id || groups[0].id) ? "selected" : ""}>${g.title}</option>`,
-						)
-						.join("");
-					adminControlsEl.style.display = "block";
-				}
-			}
-		} catch (error) {
-			console.error("Could not fetch admin groups", error);
-		}
-	}
+      const data = await apiFetch("/api/stats");
 
-	initialize();
+      // Set user greeting
+      userGreeting.textContent = `Hello, ${currentUser.first_name}!`;
+
+      // Render user's personal stats
+      renderUserStats(data.stats);
+
+      // If user is admin, show admin panel and fetch data
+      if (data.isAdmin) {
+        adminView.style.display = "block";
+        await fetchTopUsers(1);
+      }
+
+      showView("main");
+    } catch (error) {
+      console.error("Initialization failed:", error);
+      showError(error.message);
+    }
+  };
+
+  // --- Event Listeners ---
+  retryButton.addEventListener("click", initialize);
+  prevButton.addEventListener("click", () => {
+    if (currentPage > 1) {
+      fetchTopUsers(currentPage - 1);
+    }
+  });
+  nextButton.addEventListener("click", () => {
+    if (currentPage < totalPages) {
+      fetchTopUsers(currentPage + 1);
+    }
+  });
+
+  // --- Start ---
+  initialize();
 });
