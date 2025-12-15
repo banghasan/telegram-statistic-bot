@@ -178,7 +178,7 @@ export async function getUserStat(
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult: any[];
+  let queryResult: Record<string, unknown>[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -256,7 +256,7 @@ export async function getAggregatedUserStat(
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult: any[];
+  let queryResult: Record<string, unknown>[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -332,7 +332,7 @@ export async function getTopUsers({
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult: any[];
+  let queryResult: Record<string, unknown>[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -422,7 +422,7 @@ export async function getGroupTopUsers(
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult: any[];
+  let queryResult: Record<string, unknown>[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(
@@ -670,7 +670,7 @@ export async function getGroups(
   const db = getDatabase();
   const dbType = db.getDbType();
 
-  let queryResult: any[];
+  let queryResult: Record<string, unknown>[];
 
   if (dbType === "sqlite") {
     queryResult = await db.query(`

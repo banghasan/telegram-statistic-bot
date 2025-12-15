@@ -68,29 +68,6 @@ body {
   }
 }
 
-#error-view {
-  text-align: center;
-  padding: 40px 20px;
-}
-#error-view h2 {
-  color: var(--error-color);
-  margin-bottom: 10px;
-}
-#error-view p {
-  color: var(--tg-theme-hint-color);
-  margin-bottom: 20px;
-}
-#retry-button {
-  background-color: var(--tg-theme-button-color);
-  color: var(--tg-theme-button-text-color);
-  border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 500;
-  cursor: pointer;
-}
-
 .header {
   text-align: center;
   margin-bottom: 24px;
@@ -105,6 +82,30 @@ body {
   font-size: 1em;
   color: var(--tg-theme-hint-color);
   margin: 0;
+}
+
+#error-view {
+  text-align: center;
+  padding: 40px 20px;
+}
+#error-view h2 {
+  color: var(--error-color);
+  margin-bottom: 10px;
+}
+#error-view p {
+  color: var(--tg-theme-hint-color);
+  margin-bottom: 20px;
+}
+
+#retry-button {
+  background-color: var(--tg-theme-button-color);
+  color: var(--tg-theme-button-text-color);
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1em;
+  font-weight: 500;
+  cursor: pointer;
 }
 
 #user-stats-container {
@@ -218,4 +219,17 @@ td.user-cell {
   font-size: 1em;
   font-weight: 500;
   color: var(--tg-theme-hint-color);
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  margin-top: 40px;
+  color: var(--tg-theme-hint-color);
+  font-size: 0.9em;
+}
+
+footer a {
+  color: var(--tg-theme-link-color);
+  text-decoration: none;
 }
