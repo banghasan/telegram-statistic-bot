@@ -1,0 +1,26 @@
+{
+	"name": "gedebug",
+	"module": "src/bot.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"start": "bun run src/bot.ts",
+		"dev": "bun --hot src/bot.ts",
+		"lint": "bunx @biomejs/biome lint --apply .",
+		"format": "bunx @biomejs/biome format --write .",
+		"check": "bunx @biomejs/biome check ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.8",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^5"
+	},
+	"dependencies": {
+		"@types/lodash": "^4.17.21",
+		"gramio": "^0.4.11",
+		"js-yaml": "^4.1.1",
+		"lodash": "^4.17.21"
+	}
+}

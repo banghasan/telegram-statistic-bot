@@ -1,0 +1,33 @@
+# General Bot Configuration
+timezone: "Asia/Jakarta"
+
+# Telegram Bot Configuration
+bot:
+  # Your Telegram bot token from @BotFather
+  token: "YOUR_BOT_TOKEN"
+
+  # The mode to run the bot in. Can be 'polling' or 'webhook'.
+  mode: "polling"
+
+  # Settings for webhook mode
+  webhook:
+    # The public URL for your webhook (e.g., https://your-domain.com/bot)
+    # This should point to the server host and port defined below.
+    url: "https://example.com/bot"
+
+# Mini Web App Configuration
+webapp:
+  # The public URL of your Mini Web App
+  # This is the URL that will be opened from the /stats command
+  url: "YOUR_WEB_APP_URL"
+
+# Server configuration for the Web App and/or Webhook
+server:
+  host: "localhost"
+  port: 8101
+
+# User IDs for access control
+owner: 123456789
+admins:
+  - 987654321
+  - 112233445

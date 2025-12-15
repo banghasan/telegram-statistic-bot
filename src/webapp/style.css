@@ -1,0 +1,110 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+
+:root {
+	--tg-theme-bg-color: #ffffff;
+	--tg-theme-text-color: #000000;
+	--tg-theme-hint-color: #999999;
+	--tg-theme-link-color: #2481cc;
+	--tg-theme-button-color: #2481cc;
+	--tg-theme-button-text-color: #ffffff;
+	--tg-theme-secondary-bg-color: #f4f4f5;
+
+	--border-color: #e0e0e0;
+	--hover-color: #f8f8f8;
+}
+
+body {
+	font-family: "Roboto", sans-serif;
+	background-color: var(--tg-theme-bg-color);
+	color: var(--tg-theme-text-color);
+	margin: 0;
+	padding: 15px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+#loader,
+#error {
+	text-align: center;
+	padding: 40px 20px;
+	color: var(--tg-theme-hint-color);
+	font-size: 1.2em;
+}
+
+#error {
+	color: #ff4d4d;
+	display: none;
+}
+
+h1 {
+	font-size: 1.8em;
+	font-weight: 700;
+	margin-bottom: 20px;
+	color: var(--tg-theme-text-color);
+	text-align: center;
+}
+
+#admin-controls {
+	margin-bottom: 20px;
+	padding: 10px;
+	background-color: var(--tg-theme-secondary-bg-color);
+	border-radius: 8px;
+	text-align: center;
+}
+
+#group-select {
+	padding: 8px 12px;
+	border-radius: 6px;
+	border: 1px solid var(--border-color);
+	background-color: var(--tg-theme-bg-color);
+	color: var(--tg-theme-text-color);
+	font-size: 1em;
+}
+
+.leaderboard-container {
+	width: 100%;
+	overflow-x: auto;
+	border: 1px solid var(--border-color);
+	border-radius: 8px;
+	background-color: var(--tg-theme-secondary-bg-color);
+}
+
+table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+th,
+td {
+	padding: 12px 15px;
+	text-align: left;
+	border-bottom: 1px solid var(--border-color);
+	white-space: nowrap;
+}
+
+thead th {
+	background-color: var(--tg-theme-bg-color);
+	font-weight: 500;
+	color: var(--tg-theme-hint-color);
+	text-transform: uppercase;
+	font-size: 0.85em;
+}
+
+tbody tr:last-child td {
+	border-bottom: none;
+}
+
+tbody tr:hover {
+	background-color: var(--hover-color);
+}
+
+td:first-child,
+th:first-child {
+	text-align: center;
+	font-weight: 700;
+}
+
+.user-cell {
+	font-weight: 500;
+	color: var(--tg-theme-link-color);
+}

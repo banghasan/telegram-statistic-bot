@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Group Statistics</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div id="loader">Loading...</div>
+    <div id="error"></div>
+    <div id="main" style="display: none;">
+        <h1 id="group-title">Group Statistics</h1>
+        <div id="admin-controls" style="display: none;">
+            <label for="group-select">Select Group:</label>
+            <select id="group-select"></select>
+        </div>
+        <div class="leaderboard-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>User</th>
+                        <th>Messages</th>
+                        <th>Words</th>
+                        <th>Avg Words</th>
+                        <th>Stickers</th>
+                        <th>Media</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard">
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
