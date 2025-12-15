@@ -1,14 +1,18 @@
 import type { Bot } from "gramio";
 import { statsService } from "../services/stats.service";
 import { userService } from "../services/user.service";
+import { createLogger } from "../logger";
 
 export function loadMessageTracker(bot: Bot) {
   // Middleware to track user stats
   bot.on("message", async (context, next) => {
     const { from, chat, text, sticker, photo, video, document, audio } =
       context;
+    
     // Only track in groups and supergroups, and only if a user is present
     if (chat.type === "private" || !from) return next();
+
+    const log = createLogger({ userId: from.id, chatId: chat.id });
 
     // Check if user is banned and kick them from the group if they are
     const isBanned = await userService.isUserBanned(from.id);
@@ -18,10 +22,11 @@ export function loadMessageTracker(bot: Bot) {
         await context.reply(
           "❌ You have been removed from this group because your account has been banned."
         );
+        log.info("Kicked banned user");
       } catch (kickError) {
-        console.error(
-          `Failed to kick banned user ${from.id} from group ${chat.id}:`,
-          kickError
+        log.error(
+          { err: kickError },
+          `Failed to kick banned user ${from.id} from group ${chat.id}`
         );
       }
       return next();
@@ -44,7 +49,7 @@ export function loadMessageTracker(bot: Bot) {
       username: from.username,
       firstName: from.firstName,
       lastName: from.lastName,
-      groupTitle: chat.title,
+      groupTitle: "title" in chat ? chat.title : undefined,
       groupUsername: groupUsername,
       isText,
       isSticker,

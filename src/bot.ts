@@ -12,17 +12,19 @@ const bot = new Bot(config.bot.token);
 // Load all commands and middleware
 loadCommands(bot);
 
+import { logger } from "./logger";
+
 // --- STARTUP ---
 async function start() {
   const botInfo = await bot.api.getMe();
-  console.log(`Starting bot @${botInfo.username}...`);
+  logger.info(`Starting bot @${botInfo.username}...`);
 
   const { host, port } = config.server;
 
   try {
     if (config.bot.mode === "webhook") {
       const webhookUrl = new URL(config.bot.webhook.url);
-      console.log(`Starting in webhook mode...`);
+      logger.info(`Starting in webhook mode...`);
 
       // Mount webhook handler to Hono
       app.post(webhookUrl.pathname, async (c) => {
@@ -37,12 +39,12 @@ async function start() {
       });
 
       await bot.api.setWebhook({ url: config.bot.webhook.url });
-      console.log(
+      logger.info(
         `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`
       );
     } else {
       // Polling mode
-      console.log(`Starting in polling mode...`);
+      logger.info(`Starting in polling mode...`);
       await bot.api.deleteWebhook({ drop_pending_updates: true });
 
       // Start Hono server for Web App
@@ -53,12 +55,12 @@ async function start() {
       });
 
       bot.start(); // Start polling
-      console.log(
+      logger.info(
         `Web server for Mini App listening on http://${host}:${port}`
       );
     }
   } catch (error) {
-    console.error("Failed to start the bot or server:", error);
+    logger.error({ err: error }, "Failed to start the bot or server");
   }
 }
 

@@ -1,10 +1,15 @@
 import crypto from "node:crypto";
 import { createMiddleware } from "hono/factory";
 import config from "../../config";
+import { logger } from "../../logger";
 
 export const verifyTelegramWebApp = createMiddleware(async (c, next) => {
   const header = c.req.header("Telegram-Data");
   if (!header) {
+    logger.warn(
+      { ip: c.req.header("cf-connecting-ip") },
+      "Unauthorized WebApp access attempt: No Telegram-Data"
+    );
     return c.json({ error: "Not a Telegram Web App request" }, 401);
   }
 
@@ -27,6 +32,10 @@ export const verifyTelegramWebApp = createMiddleware(async (c, next) => {
     .digest("hex");
 
   if (calculatedHash !== hash) {
+    logger.warn(
+      { ip: c.req.header("cf-connecting-ip"), params: header },
+      "Unauthorized WebApp access attempt: Invalid hash"
+    );
     return c.json({ error: "Invalid hash" }, 403);
   }
 
