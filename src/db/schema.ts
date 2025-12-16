@@ -34,6 +34,7 @@ export const users = mysqlTable("users", {
   first_name: varchar("first_name", { length: 255 }).notNull(),
   last_name: varchar("last_name", { length: 255 }),
   message: int("message").default(0),
+  edited_message: int("edited_message").default(0),
   words: int("words").default(0),
   average: float("average").default(0),
   sticker: int("sticker").default(0),

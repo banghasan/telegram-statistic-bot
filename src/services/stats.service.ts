@@ -203,13 +203,14 @@ export const statsService = {
 
   formatStatsMessage(userStats: any, user: { firstName: string; lastName?: string }): string {
     return (
-      `📊 *Your Statistics*\n\n` +
-      `👤 Name: ${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}\n` +
-      `💬 Messages: ${userStats.message || 0}\n` +
-      `📝 Words: ${userStats.words || 0}\n` +
-      `📈 Avg. words/msg: ${userStats.average || 0}\n` +
-      `🖼️ Media: ${userStats.media || 0}\n` +
-      `😊 Stickers: ${userStats.sticker || 0}`
+      `📊 *Your Statistics*\n` +
+      ` ├ 👤 Name: ${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}\n` +
+      ` ├ 💬 Messages: ${userStats.message || 0}\n` +
+      ` ├ 📝 Edited: ${userStats.edited_message || 0}\n` +
+      ` ├ 📑 Words: ${userStats.words || 0}\n` +
+      ` ├ 📈 Avg : ${userStats.average || 0} Word/Message\n` +
+      ` ├ 🖼️ Media: ${userStats.media || 0}\n` +
+      ` └ 😊 Stickers: ${userStats.sticker || 0}`
     );
   },
 };

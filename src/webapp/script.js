@@ -91,6 +91,20 @@ document.addEventListener('alpine:init', () => {
             return new Intl.NumberFormat('en-US').format(num);
         },
 
+        formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return new Intl.DateTimeFormat('en-GB', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric',
+                hour: '2-digit', 
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            }).format(date).replace(/,/g, '');
+        },
+
         applyTheme() {
             const tg = window.Telegram.WebApp;
             const root = document.documentElement;
