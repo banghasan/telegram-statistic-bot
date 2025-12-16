@@ -132,6 +132,38 @@ bun run dev
 - **Linting**: `bun lint`
 - **Formatting**: `bun format`
 
+## Docker Deployment
+
+### Using Docker Compose
+
+1. Ensure `docker-compose.yml` is present.
+2. Ensure `config.yml` is configured.
+3. Run:
+
+```bash
+docker-compose up -d
+```
+
+### Manual Docker Run
+
+```bash
+docker run -d \
+  --name telegram-stats-bot \
+  -p 3000:3000 \
+  -v $(pwd)/config.yml:/app/config.yml \
+  ghcr.io/banghasan/telegram-statistic-bot:latest
+```
+
+### Build & Publish (GitHub Actions)
+
+This repository includes a manual workflow to build and push the Docker image to
+GitHub Container Registry (GHCR).
+
+1. Go to the **Actions** tab in GitHub.
+2. Select **Docker Build and Publish**.
+3. Click **Run workflow**.
+4. Enter the desired tag (default: `latest`).
+
 ## License
 
 MIT

@@ -1,0 +1,16 @@
+services:
+  bot:
+    image: ghcr.io/banghasan/telegram-statistic-bot:latest
+    container_name: telegram_stats_bot
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8101}:8101"
+    volumes:
+      - ./config.yml:/app/config.yml
+    # Optional: Network configuration if using a separate database container
+    # networks:
+    #   - bot-net
+
+    # networks:
+    #   bot-net:
+    #     driver: bridge
