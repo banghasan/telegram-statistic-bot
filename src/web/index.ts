@@ -15,6 +15,9 @@ publicApi.get("/info", (c) => {
 app.route("/api/public", publicApi);
 app.route("/api", api);
 
+// Health check endpoint
+app.get("/health", (c) => c.text("OK", 200));
+
 // Static files
 // In a production environment with Vite, this would be handled differently,
 // but for the raw simple setup we serve specific files.

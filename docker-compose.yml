@@ -15,7 +15,7 @@ services:
       - ./config.yml:/app/config.yml
     environment:
       - NODE_ENV=production
-    command: /app/migrate
+    entrypoint: [ "/app/migrate" ]
     profiles: [ "tools" ] # Don't start with 'up' automatically
     # Optional: Network configuration if using a separate database container
     # networks:
