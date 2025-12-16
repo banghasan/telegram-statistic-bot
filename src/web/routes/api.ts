@@ -15,7 +15,9 @@ api.get("/stats", async (c) => {
   }
 
   const stats = await statsService.getUserStat(user.id);
-  const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
+  const isAdmin =
+    config.admins.map(Number).includes(Number(user.id)) ||
+    Number(config.owner) === Number(user.id);
 
   return c.json({ stats, isAdmin });
 });
