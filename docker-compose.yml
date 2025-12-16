@@ -4,7 +4,7 @@ services:
     container_name: telegram_stats_bot
     restart: unless-stopped
     ports:
-      - "${PORT:-8101}:8101"
+      - "${PORT:-8101}:8101" # port internal harus sesuai config.yml
     volumes:
       - ./config.yml:/app/config.yml
 
