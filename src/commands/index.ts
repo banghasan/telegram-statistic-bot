@@ -1,4 +1,5 @@
 import type { Bot } from "gramio";
+import { loadDeleteCommand } from "./delete";
 import { loadMessageTracker } from "./message";
 import { loadPingCommand } from "./ping";
 import { loadStartCommand } from "./start";
@@ -11,4 +12,5 @@ export function loadCommands(bot: Bot) {
   loadPingCommand(bot);
   loadStatsCommand(bot);
   loadWebCommand(bot);
+  loadDeleteCommand(bot);
 }

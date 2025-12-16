@@ -178,11 +178,13 @@ export const statsService = {
         .values({
           user_id: user.id,
           group_id: chat.id,
+          message: 1,
           createdAt: now,
           updatedAt: now,
         })
         .onDuplicateKeyUpdate({
           set: {
+            message: sql`message + 1`,
             updatedAt: now,
           },
         });
@@ -191,11 +193,11 @@ export const statsService = {
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
       await db.execute(sql`
-        UPDATE groups 
-        SET 
+        UPDATE groups
+        SET
           users = (SELECT COUNT(*) FROM detail_user_group WHERE group_id = ${chat.id}),
           user_active = (
-            SELECT COUNT(*) 
+            SELECT COUNT(*)
             FROM detail_user_group d
             JOIN users u ON d.user_id = u.id
             WHERE d.group_id = ${chat.id} AND u.updatedAt > ${thirtyDaysAgo}
@@ -284,10 +286,44 @@ export const statsService = {
     }
   },
 
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is complex
+  async processMessageDelete(ctx: any) {
+    const db = getDb();
+    const chat = ctx.chat;
+    const user = ctx.from;
+
+    if (!user) return;
+    if (chat.type === "private") return;
+
+    // Check if banned
+    if (await this.isBanned(user.id)) return;
+    if (await this.isBanned(chat.id)) return;
+
+    const now = new Date();
+
+    // --- 1. Update Users Table ---
+    await db
+      .update(users)
+      .set({
+        deleted: sql`deleted + 1`,
+        updatedAt: now,
+      })
+      .where(eq(users.id, user.id));
+
+    // --- 2. Update Groups Table ---
+    await db
+      .update(groups)
+      .set({
+        deleted: sql`deleted + 1`,
+        updatedAt: now,
+      })
+      .where(eq(groups.id, chat.id));
+  },
+
   formatStatsMessage(
     // biome-ignore lint/suspicious/noExplicitAny: User stats object is dynamic
     userStats: any,
-    user: { firstName: string; lastName?: string }
+    user: { firstName: string; lastName?: string },
   ): string {
     return (
       `📊 *Your Statistics*\n` +

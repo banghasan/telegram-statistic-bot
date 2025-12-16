@@ -1,25 +1,32 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Telegram Stats</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <script
             defer
             src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
         ></script>
-        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="style.css" />
     </head>
     <body class="bg-tg-bg text-tg-text font-sans antialiased p-4">
         <div x-data="statsApp" class="container mx-auto max-w-2xl">
             <!-- View: Restricted Access -->
-            <div x-show="view === 'restricted'" x-transition class="text-center py-10">
+            <div
+                x-show="view === 'restricted'"
+                x-transition
+                class="text-center py-10"
+            >
                 <div class="text-6xl mb-4">🤖</div>
                 <h1 class="text-2xl font-bold mb-4">Access Denied</h1>
                 <p class="mb-6">
-                    Web ini hanya dapat diakses melalui Telegram Bot username: 
-                    <span class="font-mono bg-gray-800 px-2 py-1 rounded" x-text="botUsername"></span>
+                    Web ini hanya dapat diakses melalui Telegram Bot username:
+                    <span
+                        class="font-mono bg-gray-800 px-2 py-1 rounded"
+                        x-text="botUsername"
+                    ></span>
                 </p>
                 <a
                     :href="'https://t.me/' + botUsername"
@@ -43,8 +50,7 @@
                 x-show="error"
                 class="text-red-500 text-center mb-4"
                 x-text="error"
-            >
-            </div>
+            ></div>
 
             <!-- Navigation (Admin Only) -->
             <template x-if="!restricted && isAdmin">
@@ -77,12 +83,15 @@
             <div x-show="view === 'stats'" x-transition>
                 <div class="text-center mb-6">
                     <h1 class="text-2xl font-bold mb-2">
-                        Hallo <span
+                        Hallo
+                        <span
                             x-text="user?.first_name + (user?.last_name ? ' ' + user?.last_name : '')"
-                        ></span>,
+                        ></span
+                        >,
                     </h1>
                     <p class="text-tg-hint">
-                         👤 Your ID is <code><span x-text="user?.id"></span></code>
+                        👤 Your ID is
+                        <code><span x-text="user?.id"></span></code>
                     </p>
                 </div>
 
@@ -97,8 +106,7 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.message || 0)"
-                        >
-                        </div>
+                        ></div>
                     </div>
 
                     <div
@@ -111,8 +119,20 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.edited_message || 0)"
-                        >
+                        ></div>
+                    </div>
+
+                    <div
+                        class="stat-card flex items-center justify-between p-4"
+                    >
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🗑️</span>
+                            <span class="stat-label">Deleted</span>
                         </div>
+                        <div
+                            class="stat-value"
+                            x-text="formatNumber(stats.deleted || 0)"
+                        ></div>
                     </div>
 
                     <div
@@ -125,8 +145,7 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.words || 0)"
-                        >
-                        </div>
+                        ></div>
                     </div>
 
                     <div
@@ -139,8 +158,7 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.average || 0)"
-                        >
-                        </div>
+                        ></div>
                     </div>
 
                     <div
@@ -153,8 +171,7 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.media || 0)"
-                        >
-                        </div>
+                        ></div>
                     </div>
 
                     <div
@@ -167,42 +184,72 @@
                         <div
                             class="stat-value"
                             x-text="formatNumber(stats.sticker || 0)"
-                        >
-                        </div>
+                        ></div>
                     </div>
                 </div>
             </div>
 
             <!-- View: Groups -->
             <div x-show="view === 'groups'" x-transition>
-                <h2 class="text-xl font-bold mb-4">Top Groups (&lt; 3 Months)</h2>
+                <h2 class="text-xl font-bold mb-4">
+                    Top Groups (&lt; 3 Months)
+                </h2>
                 <div class="overflow-x-auto">
-                <table class="w-full text-left">
-                    <thead>
-                        <tr class="text-tg-hint border-b border-tg-hint/20">
-                            <th class="p-2">#</th>
-                            <th class="p-2">Type</th>
-                            <th class="p-2">Title</th>
-                            <th class="p-2">Username</th>
-                            <th class="p-2 text-right">Msgs</th>
-                            <th class="p-2 text-right">Users</th>
-                            <th class="p-2 text-right">Updated</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <template x-for="(group, index) in groupsList" :key="group.id">
-                            <tr class="border-b border-tg-hint/10">
-                                <td class="p-2" x-text="(groupsPage - 1) * 5 + index + 1"></td>
-                                <td class="p-2 text-xs" x-text="group.type"></td>
-                                <td class="p-2 font-medium" x-text="group.title"></td>
-                                <td class="p-2 text-xs" x-text="group.username || '-'"></td>
-                                <td class="p-2 text-right" x-text="formatNumber(group.message)"></td>
-                                <td class="p-2 text-right" x-text="formatNumber(group.users)"></td>
-                                <td class="p-2 text-right text-xs" x-text="formatDate(group.updatedAt)"></td>
+                    <table class="w-full text-left">
+                        <thead>
+                            <tr class="text-tg-hint border-b border-tg-hint/20">
+                                <th class="p-2">#</th>
+                                <th class="p-2">Type</th>
+                                <th class="p-2">Title</th>
+                                <th class="p-2">Username</th>
+                                <th class="p-2 text-right">Msgs</th>
+                                <th class="p-2 text-right">Deleted</th>
+                                <th class="p-2 text-right">Users</th>
+                                <th class="p-2 text-right">Updated</th>
                             </tr>
-                        </template>
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            <template
+                                x-for="(group, index) in groupsList"
+                                :key="group.id"
+                            >
+                                <tr class="border-b border-tg-hint/10">
+                                    <td
+                                        class="p-2"
+                                        x-text="(groupsPage - 1) * 5 + index + 1"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-xs"
+                                        x-text="group.type"
+                                    ></td>
+                                    <td
+                                        class="p-2 font-medium"
+                                        x-text="group.title"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-xs"
+                                        x-text="group.username || '-'"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(group.message)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(group.deleted || 0)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(group.users)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right text-xs"
+                                        x-text="formatDate(group.updatedAt)"
+                                    ></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
                 </div>
 
                 <!-- Pagination -->
@@ -230,7 +277,9 @@
 
             <!-- View: Users -->
             <div x-show="view === 'users'" x-transition>
-                <h2 class="text-xl font-bold mb-4">Top Users (&lt; 3 Months)</h2>
+                <h2 class="text-xl font-bold mb-4">
+                    Top Users (&lt; 3 Months)
+                </h2>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left">
                         <thead>
@@ -238,23 +287,50 @@
                                 <th class="p-2">#</th>
                                 <th class="p-2">Name</th>
                                 <th class="p-2 text-right">Msgs</th>
+                                <th class="p-2 text-right">Deleted</th>
                                 <th class="p-2 text-right">Avg</th>
                                 <th class="p-2 text-right">Activity</th>
                                 <th class="p-2 text-right">Updated</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="(u, index) in usersList" :key="u.id">
+                            <template
+                                x-for="(u, index) in usersList"
+                                :key="u.id"
+                            >
                                 <tr class="border-b border-tg-hint/10">
-                                    <td class="p-2" x-text="(usersPage - 1) * 5 + index + 1"></td>
+                                    <td
+                                        class="p-2"
+                                        x-text="(usersPage - 1) * 5 + index + 1"
+                                    ></td>
                                     <td class="p-2 font-medium">
                                         <div x-text="u.first_name"></div>
-                                        <div class="text-xs text-tg-hint" x-show="u.last_name" x-text="u.last_name"></div>
+                                        <div
+                                            class="text-xs text-tg-hint"
+                                            x-show="u.last_name"
+                                            x-text="u.last_name"
+                                        ></div>
                                     </td>
-                                    <td class="p-2 text-right" x-text="formatNumber(u.message)"></td>
-                                    <td class="p-2 text-right" x-text="formatNumber(u.average)"></td>
-                                    <td class="p-2 text-right text-xs" x-text="u.last_activity || '-'"></td>
-                                    <td class="p-2 text-right text-xs" x-text="formatDate(u.updatedAt)"></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(u.message)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(u.deleted || 0)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right"
+                                        x-text="formatNumber(u.average)"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right text-xs"
+                                        x-text="u.last_activity || '-'"
+                                    ></td>
+                                    <td
+                                        class="p-2 text-right text-xs"
+                                        x-text="formatDate(u.updatedAt)"
+                                    ></td>
                                 </tr>
                             </template>
                         </tbody>
