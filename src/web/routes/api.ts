@@ -1,9 +1,6 @@
 import { Hono } from "hono";
 import config from "../../config";
 import { statsService } from "../../services/stats.service";
-import { Hono } from "hono";
-import config from "../../config";
-import { statsService } from "../../services/stats.service";
 import { verifyTelegramWebApp } from "../middlewares/auth";
 import { logger } from "../../logger";
 

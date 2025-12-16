@@ -75,6 +75,7 @@ document.addEventListener("alpine:init", () => {
 
     async fetchMyStats() {
       const data = await this.api("/stats");
+      console.log('Stats data:', data);
       this.stats = data.stats || {};
       this.isAdmin = data.isAdmin;
     },
