@@ -31,7 +31,7 @@ document.addEventListener("alpine:init", () => {
         this.loading = true;
 
         try {
-          const res = await fetch("/api/public/info");
+          const res = await fetch("/public/info");
           const data = await res.json();
           this.botUsername = data.botUsername;
         } catch (_e) {

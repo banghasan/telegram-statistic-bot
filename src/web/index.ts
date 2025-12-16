@@ -12,7 +12,7 @@ publicApi.get("/info", (c) => {
   return c.json({ botUsername: runtimeState.botUsername });
 });
 
-app.route("/api/public", publicApi);
+app.route("/public", publicApi);
 app.route("/api", api);
 
 // Health check endpoint

@@ -7,7 +7,7 @@ export const verifyTelegramWebApp = createMiddleware(async (c, next) => {
   const header = c.req.header("Telegram-Data");
   if (!header) {
     logger.warn(
-      { ip: c.req.header("cf-connecting-ip") },
+      { ip: c.req.header("cf-connecting-ip"), path: c.req.path },
       "Unauthorized WebApp access attempt: No Telegram-Data"
     );
     return c.json({ error: "Not a Telegram Web App request" }, 401);
