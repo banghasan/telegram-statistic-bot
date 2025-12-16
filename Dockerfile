@@ -2,6 +2,7 @@
 FROM oven/bun:latest AS builder
 
 WORKDIR /app
+ENV NODE_ENV=production
 
 # Copy package files
 COPY package.json bun.lock ./
