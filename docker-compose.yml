@@ -13,6 +13,8 @@ services:
     container_name: telegram_stats_migrator
     volumes:
       - ./config.yml:/app/config.yml
+    environment:
+      - NODE_ENV=production
     command: /app/migrate
     profiles: [ "tools" ] # Don't start with 'up' automatically
     # Optional: Network configuration if using a separate database container

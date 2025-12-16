@@ -20,6 +20,7 @@ RUN bun build --compile --minify --sourcemap src/migrate.ts --outfile migrate
 FROM gcr.io/distroless/cc-debian12
 
 WORKDIR /app
+ENV NODE_ENV=production
 
 # Copy the executable from builder
 COPY --from=builder /app/server /app/server
