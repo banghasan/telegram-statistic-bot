@@ -201,6 +201,84 @@ export const statsService = {
     }
   },
 
+  async processEditedMessage(ctx: any) {
+    const db = getDb();
+    const chat = ctx.chat;
+    const user = ctx.from;
+
+    if (!user) return;
+    
+    // Check if banned
+    if (await this.isBanned(user.id)) return;
+    if (chat.type !== "private" && (await this.isBanned(chat.id))) return;
+
+    const now = new Date();
+    const isPrivate = chat.type === "private";
+
+    // --- 1. Update Users Table (Increment edited_message) ---
+    // We only update if the user exists. If they don't exist (rare for edit), we probably shouldn't create them just for an edit 
+    // or maybe we should? Standard logic usually implies active participation. 
+    // Let's use INSERT ON DUPLICATE KEY UPDATE to be safe and consistent with processMessage.
+    
+    await db
+      .insert(users)
+      .values({
+        id: user.id,
+        first_name: user.firstName,
+        last_name: user.lastName || null,
+        message: 0, // It's an edit, not a new message count
+        edited_message: 1,
+        words: 0,
+        average: 0,
+        sticker: 0,
+        media: 0,
+        last_activity: "edit",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+           first_name: user.firstName,
+           last_name: user.lastName || null,
+           edited_message: sql`edited_message + 1`,
+           last_activity: "edit",
+           updatedAt: now,
+        },
+      });
+
+    // --- 2. Update Groups Table (if not private) ---
+    if (!isPrivate) {
+      await db
+        .insert(groups)
+        .values({
+          id: chat.id,
+          type: chat.type,
+          title: chat.title || "",
+          username: chat.username || null,
+          users: 1,
+          user_active: 1,
+          message: 0,
+          edited_message: 1,
+          words: 0,
+          average: 0,
+          sticker: 0,
+          media: 0,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onDuplicateKeyUpdate({
+          set: {
+            title: chat.title || "",
+            username: chat.username || null,
+            edited_message: sql`edited_message + 1`,
+            updatedAt: now,
+          },
+        });
+        
+        // We don't necessarily need to update detail_user_group or aggregates for just an edit
+    }
+  },
+
   formatStatsMessage(userStats: any, user: { firstName: string; lastName?: string }): string {
     return (
       `📊 *Your Statistics*\n` +

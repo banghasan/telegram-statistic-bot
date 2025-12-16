@@ -17,7 +17,7 @@ export function loadMessageTracker(bot: Bot) {
     const isBanned = await statsService.isBanned(from.id);
     if (isBanned) {
       try {
-        await context.banChatMember({ user_id: from.id });
+        await bot.api.banChatMember({ chat_id: chat.id, user_id: from.id });
         await context.reply(
           "❌ You have been removed from this group because your account has been banned."
         );
@@ -43,6 +43,17 @@ export function loadMessageTracker(bot: Bot) {
     await statsService.processMessage(context);
 
     // Update user profile is handled inside processMessage
+    return next();
+  });
+
+  // Track edited messages
+  bot.on("edited_message", async (context, next) => {
+    // We only care about edits to messages that would have been tracked
+    // but processEditedMessage handles basic checks.
+    // However, we should check if it's a private chat or group same as message handler?
+    // statsService.processEditedMessage handles ban checks and private vs group.
+    
+    await statsService.processEditedMessage(context);
     return next();
   });
 }
