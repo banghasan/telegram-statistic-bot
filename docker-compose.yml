@@ -7,6 +7,16 @@ services:
       - "${PORT:-8101}:8101"
     volumes:
       - ./config.yml:/app/config.yml
+
+  migrator:
+    build:
+      context: .
+      target: builder
+    platform: linux/amd64 # Force amd64 if needed, or omit for auto. bun works on arm64 too.
+    volumes:
+      - ./config.yml:/app/config.yml
+    command: bun run db:push
+    profiles: [ "tools" ] # Don't start with 'up' automatically
     # Optional: Network configuration if using a separate database container
     # networks:
     #   - bot-net

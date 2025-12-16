@@ -144,6 +144,15 @@ bun run dev
 docker-compose up -d
 ```
 
+````
+### Database Migration
+
+To run database migrations inside the Docker environment, use the provided `migrator` service:
+
+```bash
+docker-compose run --rm migrator
+````
+
 ### Manual Docker Run
 
 ```bash
