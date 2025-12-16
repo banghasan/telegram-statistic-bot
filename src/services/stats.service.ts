@@ -13,6 +13,23 @@ export const statsService = {
     return result[0] || null;
   },
 
+  async getGroupsForUser(userId: number) {
+    const db = getDb();
+    const result = await db
+      .select({
+        groupId: groups.id,
+        title: groups.title,
+        userMessageCount: detail_user_group.message,
+        lastActivity: detail_user_group.updatedAt,
+      })
+      .from(detail_user_group)
+      .innerJoin(groups, eq(detail_user_group.group_id, groups.id))
+      .where(eq(detail_user_group.user_id, userId))
+      .orderBy(desc(detail_user_group.message));
+
+    return result;
+  },
+
   async getTopGroups({ page = 1, limit = 5 }: { page: number; limit: number }) {
     const db = getDb();
     const offset = (page - 1) * limit;

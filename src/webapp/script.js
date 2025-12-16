@@ -8,6 +8,7 @@ document.addEventListener("alpine:init", () => {
 
     // Stats Data
     stats: {},
+    groupsForUser: [],
 
     // Groups Data
     groupsList: [],
@@ -75,9 +76,9 @@ document.addEventListener("alpine:init", () => {
 
     async fetchMyStats() {
       const data = await this.api("/stats");
-      console.log("Stats data:", data);
       this.stats = data.stats || {};
       this.isAdmin = data.isAdmin;
+      this.groupsForUser = data.groupsForUser || [];
     },
 
     async loadGroups(page) {
@@ -143,7 +144,7 @@ document.addEventListener("alpine:init", () => {
       root.style.setProperty("--tg-button-text", p.button_text_color || "#fff");
       root.style.setProperty(
         "--tg-secondary-bg",
-        p.secondary_bg_color || "#f4f4f5"
+        p.secondary_bg_color || "#f4f4f5",
       );
     },
   }));

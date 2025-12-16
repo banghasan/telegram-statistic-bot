@@ -16,21 +16,12 @@ api.get("/stats", async (c) => {
   }
 
   const stats = await statsService.getUserStat(user.id);
+  const groupsForUser = await statsService.getGroupsForUser(user.id);
   const isAdmin =
     config.admins.map(Number).includes(Number(user.id)) ||
     Number(config.owner) === Number(user.id);
 
-  logger.info(
-    {
-      userId: user.id,
-      owner: config.owner,
-      admins: config.admins,
-      isAdmin,
-    },
-    "Admin Check Debug"
-  );
-
-  return c.json({ stats, isAdmin });
+  return c.json({ stats, isAdmin, groupsForUser });
 });
 
 api.get("/groups", async (c) => {

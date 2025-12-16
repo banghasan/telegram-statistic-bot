@@ -81,110 +81,131 @@
 
             <!-- View: My Stats -->
             <div x-show="view === 'stats'" x-transition>
-                <div class="text-center mb-6">
-                    <h1 class="text-2xl font-bold mb-2">
+                <div class="text-center mb-8">
+                    <h1 class="text-3xl font-bold mb-2">
                         Hallo
                         <span
                             x-text="user?.first_name + (user?.last_name ? ' ' + user?.last_name : '')"
                         ></span
-                        >,
+                        >!
                     </h1>
                     <p class="text-tg-hint">
-                        👤 Your ID is
-                        <code><span x-text="user?.id"></span></code>
+                        Here are your personal statistics.
                     </p>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4">
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                <!-- General Stats in a more compact grid -->
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">💬</span>
                             <span class="stat-label">Messages</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.message || 0)"
                         ></div>
                     </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">📝</span>
                             <span class="stat-label">Edited</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.edited_message || 0)"
                         ></div>
                     </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">🗑️</span>
                             <span class="stat-label">Deleted</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.deleted || 0)"
                         ></div>
                     </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">📑</span>
                             <span class="stat-label">Words</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.words || 0)"
                         ></div>
                     </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
-                            <span class="text-2xl">📈</span>
-                            <span class="stat-label">Avg Words/Msg</span>
-                        </div>
-                        <div
-                            class="stat-value"
-                            x-text="formatNumber(stats.average || 0)"
-                        ></div>
-                    </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">🖼️</span>
                             <span class="stat-label">Media</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.media || 0)"
                         ></div>
                     </div>
-
-                    <div
-                        class="stat-card flex items-center justify-between p-4"
-                    >
-                        <div class="flex items-center space-x-3">
+                    <div class="stat-card p-4">
+                        <div class="flex items-center space-x-3 mb-1">
                             <span class="text-2xl">😊</span>
                             <span class="stat-label">Stickers</span>
                         </div>
                         <div
-                            class="stat-value"
+                            class="stat-value text-2xl font-semibold"
                             x-text="formatNumber(stats.sticker || 0)"
                         ></div>
+                    </div>
+                </div>
+
+                <!-- Group Activity Section -->
+                <div>
+                    <h2 class="text-xl font-bold mb-4">Your Group Activity</h2>
+                    <div class="overflow-x-auto rounded-lg bg-tg-secondary-bg">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr
+                                    class="text-tg-hint border-b border-tg-hint/20"
+                                >
+                                    <th class="p-3">Group</th>
+                                    <th class="p-3 text-right">Your Msgs</th>
+                                    <th class="p-3 text-right">
+                                        Last Activity
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-if="groupsForUser.length === 0">
+                                    <tr>
+                                        <td
+                                            colspan="3"
+                                            class="p-4 text-center text-tg-hint"
+                                        >
+                                            No group activity found.
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template
+                                    x-for="group in groupsForUser"
+                                    :key="group.groupId"
+                                >
+                                    <tr class="border-b border-tg-hint/10">
+                                        <td
+                                            class="p-3 font-medium"
+                                            x-text="group.title"
+                                        ></td>
+                                        <td
+                                            class="p-3 text-right font-mono"
+                                            x-text="formatNumber(group.userMessageCount)"
+                                        ></td>
+                                        <td
+                                            class="p-3 text-right text-xs"
+                                            x-text="formatDate(group.lastActivity)"
+                                        ></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
