@@ -14,20 +14,17 @@ function isWebAppConfigured(): boolean {
 }
 
 export function loadStatsCommand(bot: Bot) {
-  bot.command("stats", async (context: Context) => {
+  bot.command("stats", async (context: any) => {
     const { from, chat } = context;
     if (!from) return;
 
-    // Check if we're in a private chat
-    if (chat.type === "private") {
-      // Show user statistics and add button to open web app
-      const userStats = await statsService.getAggregatedUserStat(from.id);
+    const userStats = await statsService.getUserStat(from.id);
 
-      if (!userStats) {
-        const message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
-
-        if (isWebAppConfigured()) {
-          const keyboard = new InlineKeyboard().webApp(
+    if (!userStats) {
+      const message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
+      
+      if (isWebAppConfigured() && chat.type === "private") {
+         const keyboard = new InlineKeyboard().webApp(
             "🌐 Open Web App",
             config.webapp.url
           );
@@ -35,49 +32,28 @@ export function loadStatsCommand(bot: Bot) {
             parse_mode: "Markdown",
             reply_markup: keyboard,
           });
-        } else {
-          await context.reply(message, {
-            parse_mode: "Markdown",
-          });
-        }
       } else {
-        const message = statsService.formatStatsMessage(userStats, {
-          firstName: from.firstName,
-          lastName: from.lastName,
-        });
-
-        if (isWebAppConfigured()) {
-          const keyboard = new InlineKeyboard().webApp(
-            "🌐 Open Web App",
-            config.webapp.url
-          );
-          await context.reply(message, {
-            parse_mode: "Markdown",
-            reply_markup: keyboard,
-          });
-        } else {
-          await context.reply(message, {
-            parse_mode: "Markdown",
-          });
-        }
+        await context.reply(message, { parse_mode: "Markdown" });
       }
-    } else {
-      // In a group chat, show the user's statistics directly
-      const userStats = await statsService.getAggregatedUserStat(from.id);
+      return;
+    }
 
-      if (!userStats) {
-        return context.reply(
-          `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`,
-          { parse_mode: "Markdown" }
+    const message = statsService.formatStatsMessage(userStats, {
+      firstName: from.firstName,
+      lastName: from.lastName,
+    });
+
+    if (isWebAppConfigured() && chat.type === "private") {
+        const keyboard = new InlineKeyboard().webApp(
+        "🌐 Open Web App",
+        config.webapp.url
         );
-      }
-
-      const message = statsService.formatStatsMessage(userStats, {
-        firstName: from.firstName,
-        lastName: from.lastName,
-      });
-
-      await context.reply(message, { parse_mode: "Markdown" });
+        await context.reply(message, {
+        parse_mode: "Markdown",
+        reply_markup: keyboard,
+        });
+    } else {
+        await context.reply(message, { parse_mode: "Markdown" });
     }
   });
 }

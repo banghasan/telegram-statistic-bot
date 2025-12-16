@@ -1,149 +1,137 @@
 # Telegram Group Stats Bot
 
-A Telegram bot that tracks user activity in groups and displays statistics
-through a Mini Web App. Built with [Bun](https://bun.sh/),
-[GramIO](https://gram.io/), and `bun:sqlite`.
+A comprehensive Telegram bot that tracks user activity in groups and displays
+detailed statistics through a dynamic Web App. Built with
+[Bun](https://bun.sh/), [GramIO](https://gram.io/), [Hono](https://hono.dev/),
+[Drizzle ORM](https://orm.drizzle.team/), and [MariaDB](https://mariadb.org/).
 
 ## Features
 
-- **User Activity Tracking**: Monitors messages, words, stickers, and media
-  (photos, videos, etc.) sent by users in a group.
-- **Dual Mode**: Can be run in either `polling` or `webhook` mode.
-- **Personal Stats**: Users can get their own statistics by using the `/stats`
-  command in a group.
-- **Group Leaderboard**: The `/leaderboard` command provides a deep link that
-  opens a native Telegram Mini App displaying the top 10 most active users in
-  the group.
-- **Admin View**: Bot owner and admins can view statistics for any group the bot
-  is a member of, directly from the web app.
-- **Secure**: Web app data is verified using HMAC signatures to ensure requests
-  are legitimate.
+- **Robust Statistics Tracking**: Monitors messages, word counts, stickers, and
+  media usage per user and group.
+- **MariaDB Backend**: Scalable and reliable data storage using MariaDB.
+- **Dynamic Web App**:
+  - **User Stats**: View your personal activity statistics.
+  - **Admin Dashboard**: (Admin/Owner only) View top groups and top users
+    leaderboards with pagination.
+  - Built with **Alpine.js** and **Tailwind-like** CSS for a responsive, modern
+    UI.
+- **Flexible Deployment**: Supports both `polling` and `webhook` modes.
+- **Secure**: Web app data is verified using HMAC signatures from Telegram.
 
 ## Project Structure
 
 ```
 .
-├── db/
-│   └── stats.sqlite      # The SQLite database file.
 ├── src/
-│   ├── bot.ts            # Main application file: bot logic, web server, and API.
-│   ├── config.ts         # Loads and validates the configuration file.
-│   ├── database.ts       # Handles all database interactions (SQLite).
-│   └── webapp/
-│       ├── index.html    # The main page for the Mini Web App.
-│       ├── style.css     # Styles for the web app.
-│       └── script.js     # Client-side logic for the web app.
-├── .gitignore
-├── biome.json            # Biome.js (linter, formatter) configuration.
-├── config.example.yml    # Example configuration file.
+│   ├── bot.ts            # Main entry point (Bot + Web Server)
+│   ├── config.ts         # Configuration loader (Zod)
+│   ├── db/               # Database logic (Drizzle ORM)
+│   │   ├── index.ts      # DB connection
+│   │   └── schema.ts     # MariaDB tables (users, groups, etc.)
+│   ├── services/         # Business logic
+│   │   └── stats.service.ts # Core stats processing
+│   ├── commands/         # Bot commands (/stats, etc.)
+│   ├── web/              # Web application backend (Hono)
+│   │   ├── index.ts      # Web server setup
+│   │   └── routes/       # API endpoints
+│   └── webapp/           # Frontend (Alpine.js)
+│       ├── index.html
+│       ├── style.css
+│       └── script.js
+├── config.yml            # Main configuration file
 ├── package.json
-└── tsconfig.json
+└── README.md
 ```
 
-## Getting Started
+## Prerequisites
 
-Follow these steps to set up and run the bot.
+- **Bun** runtime installed.
+- **MariaDB** server running and accessible.
+- A **Telegram Bot Token**.
 
-### 1. Prerequisites
+## Setup Guide
 
-Make sure you have [Bun](https://bun.sh/docs/installation) installed on your
-machine.
-
-### 2. Clone the Repository
+### 1. Clone & Install
 
 ```bash
 git clone <repository-url>
 cd <repository-directory>
-```
-
-### 3. Install Dependencies
-
-```bash
 bun install
 ```
 
-### 4. Configure the Bot
+### 2. Configure Database & Bot
 
-Create a `config.yml` file by copying the example:
+Copy the example config:
 
 ```bash
 cp config.example.yml config.yml
 ```
 
-Now, edit `config.yml` with your own values:
+Edit `config.yml`:
 
-- **`bot.token`**: Your Telegram bot token from
-  [@BotFather](https://t.me/BotFather).
-- **`bot.mode`**: Set to `polling` to start, or `webhook` for production.
-- **`bot.webhook.url`**: If using webhook mode, the public URL for your webhook
-  (e.g., `https://your-domain.com/bot`).
-- **`bot.webhook.port`**: The port for the server to listen on (for both webhook
-  and the web app).
-- **`webapp.url`**: The public URL for your Mini Web App. This can be the same
-  as your webhook URL, but without the `/bot` path. See the note below.
-- **`owner`**: The Telegram User ID of the bot's owner.
-- **`admins`**: A list of Telegram User IDs for users who should have admin
-  privileges.
+```yaml
+bot:
+  token: "YOUR_BOT_TOKEN_HERE"
+  mode: "polling" # or "webhook"
+  webhook:
+    url: "https://your-domain.com/bot" # Required for webhook mode
+    port: 8101
 
-**A Note on Public URLs:** For the Mini Web App and Webhook mode to work,
-Telegram needs to access the bot from a public HTTPS URL. When developing
-locally, the bot runs a server (e.g., on port `8080`). You will need a tool like
-[ngrok](https://ngrok.com/) to expose this local server to the internet.
+database:
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "password"
+  database: "telegram_stats"
 
-Example using ngrok:
+webapp:
+  url: "https://your-domain.com" # URL where the webapp is hosted
 
-```bash
-ngrok http 8101
+owner: 123456789 # Your Telegram User ID
+admins: # List of Admin IDs
+  - 987654321
 ```
 
-Ngrok will give you a public `https` URL (e.g.,
-`https://xxxx-xxxx.ngrok-free.app`). Use this for your `webapp.url` and
-`bot.webhook.url` in the config file.
+### 3. Database Migration
 
-### 5. Run the Bot
+The bot uses Drizzle ORM. You may need to push the schema to your MariaDB
+instance:
 
-Once configured, you can start the bot:
+```bash
+# If you have drizzle-kit configured in package.json
+bun run db:push
+# Or ensure the bot creates tables on startup if configured (currently handled via code or manual push)
+```
+
+_Note: The current setup assumes the database exists. Tables are defined in
+`src/db/schema.ts`._
+
+### 4. Run the Bot
 
 ```bash
 bun start
+# or for development
+bun run dev
 ```
 
-The console will show that the web server and the bot have started in the
-configured mode.
+## Usage
 
-## How It Works
-
-1. **Add the Bot to a Group**: Make the bot a member of your Telegram group. It
-   will automatically start tracking messages.
-2. **Get Your Stats**: Type `/stats` in the group. The bot will reply with your
-   personal statistics for that group.
-3. **View the Leaderboard**: Type `/leaderboard` in the group. The bot will show
-   a button.
-4. **Open the Mini Web App**: Click the button. This will open a private chat
-   with the bot and automatically send you a Mini App button.
-5. **Launch Mini App**: Click the Mini App button in the private chat to view
-   the group's top 10 most active users in a native Telegram Mini App.
-6. **Admin View**: If you are listed as an `owner` or `admin` in the config, the
-   web app will show a dropdown menu allowing you to view the stats for any
-   group the bot is in.
-
-> **Note**: The Mini App opens in a private chat because Telegram's `web_app`
-> button type only works in private chats, not in groups. This approach provides
-> the best native Telegram Mini App experience.
+1. **Add to Group**: Add the bot to your group and promote it to Admin
+   (optional, but recommended for full access).
+2. **Track Activity**: The bot automatically records activity for every message.
+3. **View Stats**:
+   - Send `/stats` in the group or private chat.
+   - Click the **"Open Web App"** button.
+   - **Regular Users**: See their own stats.
+   - **Admins/Owner**: Can switch tabs to view **Top Groups** and **Top Users**
+     (filtered for activity in the last 3 months).
 
 ## Development
 
-This project uses [Biome.js](https://biomejs.dev/) for linting and formatting.
+- **Linting**: `bun lint`
+- **Formatting**: `bun format`
 
-- **Check for issues**:
-  ```bash
-  bun check
-  ```
-- **Fix linting errors**:
-  ```bash
-  bun lint
-  ```
-- **Format the code**:
-  ```bash
-  bun format
-  ```
+## License
+
+MIT

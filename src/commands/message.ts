@@ -1,6 +1,5 @@
 import type { Bot } from "gramio";
 import { statsService } from "../services/stats.service";
-import { userService } from "../services/user.service";
 import { createLogger } from "../logger";
 
 export function loadMessageTracker(bot: Bot) {
@@ -15,10 +14,10 @@ export function loadMessageTracker(bot: Bot) {
     const log = createLogger({ userId: from.id, chatId: chat.id });
 
     // Check if user is banned and kick them from the group if they are
-    const isBanned = await userService.isUserBanned(from.id);
+    const isBanned = await statsService.isBanned(from.id);
     if (isBanned) {
       try {
-        await context.kickChatMember({ user_id: from.id });
+        await context.banChatMember({ user_id: from.id });
         await context.reply(
           "❌ You have been removed from this group because your account has been banned."
         );
@@ -40,32 +39,10 @@ export function loadMessageTracker(bot: Bot) {
     // Don't track if it's not a message type we are interested in
     if (!isText && !isSticker && !isMedia) return next();
 
-    // In `gramio`, `chat.username` is available for public groups/channels
-    const groupUsername = "username" in chat ? chat.username : undefined;
+    // Track stats
+    await statsService.processMessage(context);
 
-    await statsService.upsertUserStat({
-      userId: from.id,
-      groupId: chat.id,
-      username: from.username,
-      firstName: from.firstName,
-      lastName: from.lastName,
-      groupTitle: "title" in chat ? chat.title : undefined,
-      groupUsername: groupUsername,
-      isText,
-      isSticker,
-      isMedia,
-      wordCount: isText ? text.split(/\s+/).length : 0,
-    });
-
-    // Update user profile as well
-    await userService.upsertUserProfile(
-      from.id,
-      from.username,
-      from.firstName,
-      from.lastName,
-      isBanned
-    );
-
+    // Update user profile is handled inside processMessage
     return next();
   });
 }

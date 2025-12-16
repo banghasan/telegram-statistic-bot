@@ -1,314 +1,215 @@
-import { sql, eq, and, desc, count } from "drizzle-orm";
-import {
-  getDbType,
-  getMysqlDb,
-  getSqliteDb,
-} from "../db";
-import { userStatsMySQL, userStatsSQLite } from "../db/schema";
-
-export interface UserStat {
-  user_id: number;
-  username?: string | null;
-  first_name: string;
-  last_name?: string | null;
-  message_count: number;
-  word_count: number;
-  average_words: number;
-  sticker_count: number;
-  media_count: number;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-
-  // Aggregated fields
-  group_id?: number;
-  group_title?: string | null;
-  group_username?: string | null;
-}
+import { sql, eq, and, gt, desc, count } from "drizzle-orm";
+import { getDb } from "../db";
+import { groups, users, detail_user_group, banned } from "../db/schema";
 
 export const statsService = {
-  async getUserStat(userId: number, groupId: number): Promise<UserStat | null> {
-    const dbType = getDbType();
-
-    if (dbType === "sqlite") {
-      const db = getSqliteDb();
-      const result = await db
-        .select({
-          user_id: userStatsSQLite.user_id,
-          group_id: userStatsSQLite.group_id,
-          username: userStatsSQLite.username,
-          first_name: userStatsSQLite.first_name,
-          last_name: userStatsSQLite.last_name,
-          group_title: userStatsSQLite.group_title,
-          group_username: userStatsSQLite.group_username,
-          message_count: userStatsSQLite.message_count,
-          word_count: userStatsSQLite.word_count,
-          average_words: sql<number>`(CASE WHEN ${userStatsSQLite.message_count} > 0 THEN CAST(CEILING(CAST(${userStatsSQLite.word_count} AS REAL) / ${userStatsSQLite.message_count}) AS INTEGER) ELSE 0 END)`,
-          sticker_count: userStatsSQLite.sticker_count,
-          media_count: userStatsSQLite.media_count,
-          createdAt: userStatsSQLite.createdAt,
-          updatedAt: userStatsSQLite.updatedAt,
-        })
-        .from(userStatsSQLite)
-        .where(
-          and(
-            eq(userStatsSQLite.user_id, userId),
-            eq(userStatsSQLite.group_id, groupId)
-          )
-        )
-        .limit(1);
-
-      return (result[0] as unknown as UserStat) || null;
-    } else {
-      const db = getMysqlDb();
-      const result = await db
-        .select({
-          user_id: userStatsMySQL.user_id,
-          group_id: userStatsMySQL.group_id,
-          username: userStatsMySQL.username,
-          first_name: userStatsMySQL.first_name,
-          last_name: userStatsMySQL.last_name,
-          group_title: userStatsMySQL.group_title,
-          group_username: userStatsMySQL.group_username,
-          message_count: userStatsMySQL.message_count,
-          word_count: userStatsMySQL.word_count,
-          average_words: sql<number>`(CASE WHEN ${userStatsMySQL.message_count} > 0 THEN CEIL(${userStatsMySQL.word_count} / ${userStatsMySQL.message_count}) ELSE 0 END)`,
-          sticker_count: userStatsMySQL.sticker_count,
-          media_count: userStatsMySQL.media_count,
-          createdAt: userStatsMySQL.createdAt,
-          updatedAt: userStatsMySQL.updatedAt,
-        })
-        .from(userStatsMySQL)
-        .where(
-          and(
-            eq(userStatsMySQL.user_id, userId),
-            eq(userStatsMySQL.group_id, groupId)
-          )
-        )
-        .limit(1);
-
-      return (result[0] as unknown as UserStat) || null;
-    }
+  async getUserStat(userId: number) {
+    const db = getDb();
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, userId))
+      .limit(1);
+    return result[0] || null;
   },
 
-  async getAggregatedUserStat(userId: number): Promise<UserStat | null> {
-    const dbType = getDbType();
+  async getTopGroups({ page = 1, limit = 5 }: { page: number; limit: number }) {
+    const db = getDb();
+    const offset = (page - 1) * limit;
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
 
-    if (dbType === "sqlite") {
-      const db = getSqliteDb();
-      const result = await db
-        .select({
-          user_id: userStatsSQLite.user_id,
-          username: sql<string>`MAX(${userStatsSQLite.username})`,
-          first_name: sql<string>`MAX(${userStatsSQLite.first_name})`,
-          last_name: sql<string>`MAX(${userStatsSQLite.last_name})`,
-          message_count: sql<number>`SUM(${userStatsSQLite.message_count})`,
-          word_count: sql<number>`SUM(${userStatsSQLite.word_count})`,
-          average_words: sql<number>`(CASE WHEN SUM(${userStatsSQLite.message_count}) > 0 THEN CAST(CEILING(CAST(SUM(${userStatsSQLite.word_count}) AS REAL) / SUM(${userStatsSQLite.message_count})) AS INTEGER) ELSE 0 END)`,
-          sticker_count: sql<number>`SUM(${userStatsSQLite.sticker_count})`,
-          media_count: sql<number>`SUM(${userStatsSQLite.media_count})`,
-          createdAt: sql<string>`MIN(${userStatsSQLite.createdAt})`,
-          updatedAt: sql<string>`MAX(${userStatsSQLite.updatedAt})`,
-        })
-        .from(userStatsSQLite)
-        .where(eq(userStatsSQLite.user_id, userId))
-        .groupBy(userStatsSQLite.user_id);
-
-      return (result[0] as unknown as UserStat) || null;
-    } else {
-      const db = getMysqlDb();
-      const result = await db
-        .select({
-          user_id: userStatsMySQL.user_id,
-          username: sql<string>`MAX(${userStatsMySQL.username})`,
-          first_name: sql<string>`MAX(${userStatsMySQL.first_name})`,
-          last_name: sql<string>`MAX(${userStatsMySQL.last_name})`,
-          message_count: sql<number>`SUM(${userStatsMySQL.message_count})`,
-          word_count: sql<number>`SUM(${userStatsMySQL.word_count})`,
-          average_words: sql<number>`(CASE WHEN SUM(${userStatsMySQL.message_count}) > 0 THEN CEIL(SUM(${userStatsMySQL.word_count}) / SUM(${userStatsMySQL.message_count})) ELSE 0 END)`,
-          sticker_count: sql<number>`SUM(${userStatsMySQL.sticker_count})`,
-          media_count: sql<number>`SUM(${userStatsMySQL.media_count})`,
-          createdAt: sql<string>`MIN(${userStatsMySQL.createdAt})`,
-          updatedAt: sql<string>`MAX(${userStatsMySQL.updatedAt})`,
-        })
-        .from(userStatsMySQL)
-        .where(eq(userStatsMySQL.user_id, userId))
-        .groupBy(userStatsMySQL.user_id);
-
-      return (result[0] as unknown as UserStat) || null;
-    }
-  },
-
-  async getTopUsers({ limit, offset }: { limit: number; offset: number }): Promise<UserStat[]> {
-    const dbType = getDbType();
-
-    if (dbType === "sqlite") {
-      const db = getSqliteDb();
-      const result = await db
-        .select({
-          user_id: userStatsSQLite.user_id,
-          username: sql<string>`MAX(${userStatsSQLite.username})`,
-          first_name: sql<string>`MAX(${userStatsSQLite.first_name})`,
-          last_name: sql<string>`MAX(${userStatsSQLite.last_name})`,
-          message_count: sql<number>`SUM(${userStatsSQLite.message_count})`,
-          word_count: sql<number>`SUM(${userStatsSQLite.word_count})`,
-          average_words: sql<number>`(CASE WHEN SUM(${userStatsSQLite.message_count}) > 0 THEN CAST(CEILING(CAST(SUM(${userStatsSQLite.word_count}) AS REAL) / SUM(${userStatsSQLite.message_count})) AS INTEGER) ELSE 0 END)`,
-          sticker_count: sql<number>`SUM(${userStatsSQLite.sticker_count})`,
-          media_count: sql<number>`SUM(${userStatsSQLite.media_count})`,
-          createdAt: sql<string>`MIN(${userStatsSQLite.createdAt})`,
-          updatedAt: sql<string>`MAX(${userStatsSQLite.updatedAt})`,
-        })
-        .from(userStatsSQLite)
-        .groupBy(userStatsSQLite.user_id)
-        .orderBy(desc(sql`SUM(${userStatsSQLite.message_count})`))
-        .limit(limit)
-        .offset(offset);
-
-      return result as unknown as UserStat[];
-    } else {
-      const db = getMysqlDb();
-      const result = await db
-        .select({
-          user_id: userStatsMySQL.user_id,
-          username: sql<string>`MAX(${userStatsMySQL.username})`,
-          first_name: sql<string>`MAX(${userStatsMySQL.first_name})`,
-          last_name: sql<string>`MAX(${userStatsMySQL.last_name})`,
-          message_count: sql<number>`SUM(${userStatsMySQL.message_count})`,
-          word_count: sql<number>`SUM(${userStatsMySQL.word_count})`,
-          average_words: sql<number>`(CASE WHEN SUM(${userStatsMySQL.message_count}) > 0 THEN CEIL(SUM(${userStatsMySQL.word_count}) / SUM(${userStatsMySQL.message_count})) ELSE 0 END)`,
-          sticker_count: sql<number>`SUM(${userStatsMySQL.sticker_count})`,
-          media_count: sql<number>`SUM(${userStatsMySQL.media_count})`,
-          createdAt: sql<string>`MIN(${userStatsMySQL.createdAt})`,
-          updatedAt: sql<string>`MAX(${userStatsMySQL.updatedAt})`,
-        })
-        .from(userStatsMySQL)
-        .groupBy(userStatsMySQL.user_id)
-        .orderBy(desc(sql`SUM(${userStatsMySQL.message_count})`))
-        .limit(limit)
-        .offset(offset);
-
-      return result as unknown as UserStat[];
-    }
-  },
-
-  async getTotalUsersCount(): Promise<{ count: number }> {
-    const dbType = getDbType();
-    
-    // Drizzle count() helper is useful
-    if (dbType === "sqlite") {
-      const db = getSqliteDb();
-      const result = await db
-        .select({ count: sql<number>`COUNT(DISTINCT ${userStatsSQLite.user_id})` })
-        .from(userStatsSQLite);
-      return { count: result[0]?.count || 0 };
-    } else {
-      const db = getMysqlDb();
-      const result = await db
-        .select({ count: sql<number>`COUNT(DISTINCT ${userStatsMySQL.user_id})` })
-        .from(userStatsMySQL);
-      return { count: result[0]?.count || 0 };
-    }
-  },
-
-  async upsertUserStat(data: {
-    userId: number;
-    groupId: number;
-    username?: string;
-    firstName: string;
-    lastName?: string;
-    groupTitle?: string;
-    groupUsername?: string;
-    isText?: boolean;
-    isSticker?: boolean;
-    isMedia?: boolean;
-    wordCount?: number;
-  }) {
-    const dbType = getDbType();
-    const now = new Date();
-
-    const isTextOrMedia = data.isText || data.isMedia || data.isSticker;
-
-    if (dbType === "sqlite") {
-      const db = getSqliteDb();
-      const nowStr = now.toISOString().replace("T", " ").replace("Z", "");
-
-      await db
-        .insert(userStatsSQLite)
-        .values({
-          user_id: data.userId,
-          group_id: data.groupId,
-          username: data.username || null,
-          first_name: data.firstName,
-          last_name: data.lastName || null,
-          group_title: data.groupTitle || null,
-          group_username: data.groupUsername || null,
-          message_count: isTextOrMedia ? 1 : 0,
-          word_count: data.wordCount || 0,
-          sticker_count: data.isSticker ? 1 : 0,
-          media_count: data.isMedia ? 1 : 0,
-          createdAt: nowStr,
-          updatedAt: nowStr,
-        })
-        .onConflictDoUpdate({
-          target: [userStatsSQLite.user_id, userStatsSQLite.group_id],
-          set: {
-            username: data.username || null,
-            first_name: data.firstName,
-            last_name: data.lastName || null,
-            group_title: data.groupTitle || null,
-            group_username: data.groupUsername || null,
-            message_count: sql`${userStatsSQLite.message_count} + ${isTextOrMedia ? 1 : 0}`,
-            word_count: sql`${userStatsSQLite.word_count} + ${data.wordCount || 0}`,
-            sticker_count: sql`${userStatsSQLite.sticker_count} + ${data.isSticker ? 1 : 0}`,
-            media_count: sql`${userStatsSQLite.media_count} + ${data.isMedia ? 1 : 0}`,
-            updatedAt: nowStr,
-          },
-        });
-    } else {
-      const db = getMysqlDb();
+    const result = await db
+      .select()
+      .from(groups)
+      .where(gt(groups.updatedAt, threeMonthsAgo))
+      .orderBy(desc(groups.message))
+      .limit(limit)
+      .offset(offset);
       
+    const countResult = await db
+      .select({ count: count() })
+      .from(groups)
+      .where(gt(groups.updatedAt, threeMonthsAgo));
+
+    return { data: result, total: countResult[0]?.count || 0 };
+  },
+
+  async getTopUsers({ page = 1, limit = 5 }: { page: number; limit: number }) {
+    const db = getDb();
+    const offset = (page - 1) * limit;
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const result = await db
+      .select()
+      .from(users)
+      .where(gt(users.updatedAt, threeMonthsAgo))
+      .orderBy(desc(users.message))
+      .limit(limit)
+      .offset(offset);
+
+    const countResult = await db
+      .select({ count: count() })
+      .from(users)
+      .where(gt(users.updatedAt, threeMonthsAgo));
+
+    return { data: result, total: countResult[0]?.count || 0 };
+  },
+
+  async isBanned(id: number): Promise<boolean> {
+    const db = getDb();
+    const result = await db
+      .select({ id: banned.id })
+      .from(banned)
+      .where(eq(banned.id, id))
+      .limit(1);
+    return result.length > 0;
+  },
+
+  async processMessage(ctx: any) {
+    const db = getDb();
+    const chat = ctx.chat;
+    const user = ctx.from;
+
+    if (!user) return;
+
+    // Check if banned
+    if (await this.isBanned(user.id)) return;
+    if (chat.type !== "private" && (await this.isBanned(chat.id))) return;
+
+    const now = new Date();
+    const isPrivate = chat.type === "private";
+
+    // Analyze message content
+    const text = ctx.text || ctx.caption || "";
+    const isSticker = !!ctx.sticker;
+    const isMedia = !!(
+      ctx.photo ||
+      ctx.video ||
+      ctx.audio ||
+      ctx.document ||
+      ctx.voice ||
+      ctx.video_note
+    );
+    const wordCount = text.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
+
+    // --- 1. Update Users Table ---
+    await db
+      .insert(users)
+      .values({
+        id: user.id,
+        first_name: user.firstName,
+        last_name: user.lastName || null,
+        message: 1,
+        words: wordCount,
+        average: wordCount,
+        sticker: isSticker ? 1 : 0,
+        media: isMedia ? 1 : 0,
+        last_activity: isSticker
+          ? "sticker"
+          : isMedia
+          ? "media"
+          : text
+          ? "text"
+          : "other",
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onDuplicateKeyUpdate({
+        set: {
+          first_name: user.firstName,
+          last_name: user.lastName || null,
+          message: sql`message + 1`,
+          words: sql`words + ${wordCount}`,
+          average: sql`CEIL((words + ${wordCount}) / (message + 1))`,
+          sticker: sql`sticker + ${isSticker ? 1 : 0}`,
+          media: sql`media + ${isMedia ? 1 : 0}`,
+          last_activity: isSticker
+            ? "sticker"
+            : isMedia
+            ? "media"
+            : text
+            ? "text"
+            : "other",
+          updatedAt: now,
+        },
+      });
+
+    // --- 2. Update Groups Table (if not private) ---
+    if (!isPrivate) {
       await db
-        .insert(userStatsMySQL)
+        .insert(groups)
         .values({
-          user_id: data.userId,
-          group_id: data.groupId,
-          username: data.username || null,
-          first_name: data.firstName,
-          last_name: data.lastName || null,
-          group_title: data.groupTitle || null,
-          group_username: data.groupUsername || null,
-          message_count: isTextOrMedia ? 1 : 0,
-          word_count: data.wordCount || 0,
-          sticker_count: data.isSticker ? 1 : 0,
-          media_count: data.isMedia ? 1 : 0,
+          id: chat.id,
+          type: chat.type,
+          title: chat.title || "",
+          username: chat.username || null,
+          users: 1,
+          user_active: 1,
+          message: 1,
+          words: wordCount,
+          average: wordCount,
+          sticker: isSticker ? 1 : 0,
+          media: isMedia ? 1 : 0,
           createdAt: now,
           updatedAt: now,
         })
         .onDuplicateKeyUpdate({
           set: {
-            username: data.username || null,
-            first_name: data.firstName,
-            last_name: data.lastName || null,
-            group_title: data.groupTitle || null,
-            group_username: data.groupUsername || null,
-            message_count: sql`message_count + ${isTextOrMedia ? 1 : 0}`,
-            word_count: sql`word_count + ${data.wordCount || 0}`,
-            sticker_count: sql`sticker_count + ${data.isSticker ? 1 : 0}`,
-            media_count: sql`media_count + ${data.isMedia ? 1 : 0}`,
+            title: chat.title || "",
+            username: chat.username || null,
+            message: sql`message + 1`,
+            words: sql`words + ${wordCount}`,
+            average: sql`CEIL((words + ${wordCount}) / (message + 1))`,
+            sticker: sql`sticker + ${isSticker ? 1 : 0}`,
+            media: sql`media + ${isMedia ? 1 : 0}`,
             updatedAt: now,
           },
         });
+
+      // --- 3. Update Detail User Group ---
+      await db
+        .insert(detail_user_group)
+        .values({
+          user_id: user.id,
+          group_id: chat.id,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onDuplicateKeyUpdate({
+          set: {
+            updatedAt: now,
+          },
+        });
+
+      // Update aggregate counts
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      await db.execute(sql`
+        UPDATE groups 
+        SET 
+          users = (SELECT COUNT(*) FROM detail_user_group WHERE group_id = ${chat.id}),
+          user_active = (
+            SELECT COUNT(*) 
+            FROM detail_user_group d
+            JOIN users u ON d.user_id = u.id
+            WHERE d.group_id = ${chat.id} AND u.updatedAt > ${thirtyDaysAgo}
+          )
+        WHERE id = ${chat.id}
+      `);
     }
   },
 
-  formatStatsMessage(userStats: UserStat, user: { firstName: string; lastName?: string }): string {
+  formatStatsMessage(userStats: any, user: { firstName: string; lastName?: string }): string {
     return (
       `📊 *Your Statistics*\n\n` +
       `👤 Name: ${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}\n` +
-      `💬 Messages: ${userStats.message_count || 0}\n` +
-      `📝 Words: ${userStats.word_count || 0}\n` +
-      `📈 Avg. words/msg: ${userStats.average_words || 0}\n` +
-      `🖼️ Media: ${userStats.media_count || 0}\n` +
-      `😊 Stickers: ${userStats.sticker_count || 0}`
+      `💬 Messages: ${userStats.message || 0}\n` +
+      `📝 Words: ${userStats.words || 0}\n` +
+      `📈 Avg. words/msg: ${userStats.average || 0}\n` +
+      `🖼️ Media: ${userStats.media || 0}\n` +
+      `😊 Stickers: ${userStats.sticker || 0}`
     );
   },
 };

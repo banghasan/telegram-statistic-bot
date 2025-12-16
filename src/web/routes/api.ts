@@ -9,38 +9,47 @@ const api = new Hono();
 api.use("*", verifyTelegramWebApp);
 
 api.get("/stats", async (c) => {
-  const user = c.get("user");
+  const user = c.get("user") as { id: number };
   if (!user?.id) {
     return c.json({ error: "User not identified" }, 401);
   }
 
-  const stats = await statsService.getAggregatedUserStat(user.id);
+  const stats = await statsService.getUserStat(user.id);
   const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
 
   return c.json({ stats, isAdmin });
 });
 
-api.get("/top-users", async (c) => {
-  const user = c.get("user");
-  if (!user?.id) {
-    return c.json({ error: "User not identified" }, 401);
-  }
-
+api.get("/groups", async (c) => {
+  const user = c.get("user") as { id: number };
   const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
   if (!isAdmin) {
     return c.json({ error: "Unauthorized" }, 403);
   }
 
   const page = Number(c.req.query("page") || "1");
-  const limit = 10;
-  const offset = (page - 1) * limit;
+  const limit = 5;
 
-  const users = await statsService.getTopUsers({ limit, offset });
-  const totalUsersResult = await statsService.getTotalUsersCount();
-  const totalUsers = totalUsersResult.count;
-  const totalPages = Math.ceil(totalUsers / limit);
+  const { data, total } = await statsService.getTopGroups({ page, limit });
+  const totalPages = Math.ceil(total / limit);
 
-  return c.json({ users, totalPages, currentPage: page });
+  return c.json({ groups: data, totalPages, currentPage: page });
+});
+
+api.get("/users", async (c) => {
+  const user = c.get("user") as { id: number };
+  const isAdmin = config.admins.includes(user.id) || config.owner === user.id;
+  if (!isAdmin) {
+    return c.json({ error: "Unauthorized" }, 403);
+  }
+
+  const page = Number(c.req.query("page") || "1");
+  const limit = 5;
+
+  const { data, total } = await statsService.getTopUsers({ page, limit });
+  const totalPages = Math.ceil(total / limit);
+
+  return c.json({ users: data, totalPages, currentPage: page });
 });
 
 export { api };

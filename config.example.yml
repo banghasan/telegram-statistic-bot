@@ -28,16 +28,12 @@ server:
 
 # Database configuration
 database:
-  # Database type: sqlite or mariadb
-  type: "sqlite"
-  # For SQLite: specify the filename
-  filename: "db/stats.sqlite"
-  # For MariaDB: specify connection details
-  # host: "localhost"
-  # port: 3306
-  # username: "your_username"
-  # password: "your_password"
-  # database: "telegram_stats"
+  # Connection details for MariaDB
+  host: "localhost"
+  port: 3306
+  username: "root"
+  password: "password"
+  database: "telegram_stats"
 
 # User IDs for access control
 owner: 123456789

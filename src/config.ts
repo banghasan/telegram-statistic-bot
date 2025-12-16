@@ -22,13 +22,11 @@ const BotConfigSchema = z.object({
 });
 
 const DatabaseConfigSchema = z.object({
-  type: z.enum(["sqlite", "mariadb"]),
-  host: z.string().optional(),
-  port: z.number().optional(),
-  username: z.string().optional(),
-  password: z.string().optional(),
-  database: z.string().optional(),
-  filename: z.string().optional(),
+  host: z.string().default("localhost"),
+  port: z.number().default(3306),
+  username: z.string().default("root"),
+  password: z.string().default(""),
+  database: z.string().default("telegram_stats"),
 });
 
 const WebAppConfigSchema = z.object({
@@ -74,8 +72,8 @@ try {
 const defaultConfig = {
   timezone: "Asia/Jakarta",
   database: {
-    type: "sqlite",
-    filename: "db/stats.sqlite",
+    host: "localhost",
+    port: 3306,
   },
   server: {
     host: "localhost",
