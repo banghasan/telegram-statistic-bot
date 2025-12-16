@@ -1,6 +1,6 @@
-import { sql, eq, and, gt, desc, count } from "drizzle-orm";
+import { count, desc, eq, gt, sql } from "drizzle-orm";
 import { getDb } from "../db";
-import { groups, users, detail_user_group, banned } from "../db/schema";
+import { banned, detail_user_group, groups, users } from "../db/schema";
 
 export const statsService = {
   async getUserStat(userId: number) {
@@ -26,7 +26,7 @@ export const statsService = {
       .orderBy(desc(groups.message))
       .limit(limit)
       .offset(offset);
-      
+
     const countResult = await db
       .select({ count: count() })
       .from(groups)
@@ -67,6 +67,7 @@ export const statsService = {
     return result.length > 0;
   },
 
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is complex and we want flexibility
   async processMessage(ctx: any) {
     const db = getDb();
     const chat = ctx.chat;
@@ -92,7 +93,10 @@ export const statsService = {
       ctx.voice ||
       ctx.video_note
     );
-    const wordCount = text.trim().split(/\s+/).filter((w: string) => w.length > 0).length;
+    const wordCount = text
+      .trim()
+      .split(/\s+/)
+      .filter((w: string) => w.length > 0).length;
 
     // --- 1. Update Users Table ---
     await db
@@ -109,10 +113,10 @@ export const statsService = {
         last_activity: isSticker
           ? "sticker"
           : isMedia
-          ? "media"
-          : text
-          ? "text"
-          : "other",
+            ? "media"
+            : text
+              ? "text"
+              : "other",
         createdAt: now,
         updatedAt: now,
       })
@@ -128,10 +132,10 @@ export const statsService = {
           last_activity: isSticker
             ? "sticker"
             : isMedia
-            ? "media"
-            : text
-            ? "text"
-            : "other",
+              ? "media"
+              : text
+                ? "text"
+                : "other",
           updatedAt: now,
         },
       });
@@ -185,7 +189,7 @@ export const statsService = {
 
       // Update aggregate counts
       const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
+
       await db.execute(sql`
         UPDATE groups 
         SET 
@@ -201,13 +205,14 @@ export const statsService = {
     }
   },
 
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is complex
   async processEditedMessage(ctx: any) {
     const db = getDb();
     const chat = ctx.chat;
     const user = ctx.from;
 
     if (!user) return;
-    
+
     // Check if banned
     if (await this.isBanned(user.id)) return;
     if (chat.type !== "private" && (await this.isBanned(chat.id))) return;
@@ -216,10 +221,10 @@ export const statsService = {
     const isPrivate = chat.type === "private";
 
     // --- 1. Update Users Table (Increment edited_message) ---
-    // We only update if the user exists. If they don't exist (rare for edit), we probably shouldn't create them just for an edit 
-    // or maybe we should? Standard logic usually implies active participation. 
+    // We only update if the user exists. If they don't exist (rare for edit), we probably shouldn't create them just for an edit
+    // or maybe we should? Standard logic usually implies active participation.
     // Let's use INSERT ON DUPLICATE KEY UPDATE to be safe and consistent with processMessage.
-    
+
     await db
       .insert(users)
       .values({
@@ -238,11 +243,11 @@ export const statsService = {
       })
       .onDuplicateKeyUpdate({
         set: {
-           first_name: user.firstName,
-           last_name: user.lastName || null,
-           edited_message: sql`edited_message + 1`,
-           last_activity: "edit",
-           updatedAt: now,
+          first_name: user.firstName,
+          last_name: user.lastName || null,
+          edited_message: sql`edited_message + 1`,
+          last_activity: "edit",
+          updatedAt: now,
         },
       });
 
@@ -274,12 +279,16 @@ export const statsService = {
             updatedAt: now,
           },
         });
-        
-        // We don't necessarily need to update detail_user_group or aggregates for just an edit
+
+      // We don't necessarily need to update detail_user_group or aggregates for just an edit
     }
   },
 
-  formatStatsMessage(userStats: any, user: { firstName: string; lastName?: string }): string {
+  formatStatsMessage(
+    // biome-ignore lint/suspicious/noExplicitAny: User stats object is dynamic
+    userStats: any,
+    user: { firstName: string; lastName?: string }
+  ): string {
     return (
       `📊 *Your Statistics*\n` +
       ` ├ 👤 Name: ${user.firstName}${user.lastName ? ` ${user.lastName}` : ""}\n` +

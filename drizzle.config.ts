@@ -1,8 +1,9 @@
-import { defineConfig } from "drizzle-kit";
 import fs from "node:fs";
+import { defineConfig } from "drizzle-kit";
 import yaml from "js-yaml";
 
 const configFile = fs.readFileSync("config.yml", "utf8");
+// biome-ignore lint/suspicious/noExplicitAny: YAML load returns any
 const config = yaml.load(configFile) as any;
 
 export default defineConfig({

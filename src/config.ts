@@ -5,21 +5,28 @@ import { z } from "zod";
 
 // --- Zod Schemas ---
 
-const BotConfigSchema = z.object({
-  token: z.string().min(1, "Bot token is required"),
-  mode: z.enum(["polling", "webhook"]),
-  webhook: z.object({
-    url: z.string().url(),
-  }).optional(),
-}).refine((data) => {
-  if (data.mode === "webhook" && !data.webhook?.url) {
-    return false;
-  }
-  return true;
-}, {
-  message: "Webhook URL is required when mode is 'webhook'",
-  path: ["webhook", "url"],
-});
+const BotConfigSchema = z
+  .object({
+    token: z.string().min(1, "Bot token is required"),
+    mode: z.enum(["polling", "webhook"]),
+    webhook: z
+      .object({
+        url: z.string().url(),
+      })
+      .optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.mode === "webhook" && !data.webhook?.url) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: "Webhook URL is required when mode is 'webhook'",
+      path: ["webhook", "url"],
+    }
+  );
 
 const DatabaseConfigSchema = z.object({
   host: z.string().default("localhost"),

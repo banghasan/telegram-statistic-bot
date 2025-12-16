@@ -1,13 +1,13 @@
 import type { Bot } from "gramio";
-import { statsService } from "../services/stats.service";
 import { createLogger } from "../logger";
+import { statsService } from "../services/stats.service";
 
 export function loadMessageTracker(bot: Bot) {
   // Middleware to track user stats
   bot.on("message", async (context, next) => {
     const { from, chat, text, sticker, photo, video, document, audio } =
       context;
-    
+
     // Only track in groups and supergroups, and only if a user is present
     if (chat.type === "private" || !from) return next();
 
@@ -52,7 +52,7 @@ export function loadMessageTracker(bot: Bot) {
     // but processEditedMessage handles basic checks.
     // However, we should check if it's a private chat or group same as message handler?
     // statsService.processEditedMessage handles ban checks and private vs group.
-    
+
     await statsService.processEditedMessage(context);
     return next();
   });

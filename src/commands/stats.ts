@@ -1,5 +1,5 @@
 import { InlineKeyboard } from "@gramio/keyboards";
-import type { Bot, Context } from "gramio";
+import type { Bot } from "gramio";
 import config from "../config";
 import { statsService } from "../services/stats.service";
 
@@ -14,6 +14,7 @@ function isWebAppConfigured(): boolean {
 }
 
 export function loadStatsCommand(bot: Bot) {
+  // biome-ignore lint/suspicious/noExplicitAny: Context type is complex
   bot.command("stats", async (context: any) => {
     const { from, chat } = context;
     if (!from) return;
@@ -22,16 +23,16 @@ export function loadStatsCommand(bot: Bot) {
 
     if (!userStats) {
       const message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
-      
+
       if (isWebAppConfigured() && chat.type === "private") {
-         const keyboard = new InlineKeyboard().webApp(
-            "🌐 Open Web App",
-            config.webapp.url
-          );
-          await context.reply(message, {
-            parse_mode: "Markdown",
-            reply_markup: keyboard,
-          });
+        const keyboard = new InlineKeyboard().webApp(
+          "🌐 Open Web App",
+          config.webapp.url
+        );
+        await context.reply(message, {
+          parse_mode: "Markdown",
+          reply_markup: keyboard,
+        });
       } else {
         await context.reply(message, { parse_mode: "Markdown" });
       }
@@ -44,16 +45,16 @@ export function loadStatsCommand(bot: Bot) {
     });
 
     if (isWebAppConfigured() && chat.type === "private") {
-        const keyboard = new InlineKeyboard().webApp(
+      const keyboard = new InlineKeyboard().webApp(
         "🌐 Open Web App",
         config.webapp.url
-        );
-        await context.reply(message, {
+      );
+      await context.reply(message, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
-        });
+      });
     } else {
-        await context.reply(message, { parse_mode: "Markdown" });
+      await context.reply(message, { parse_mode: "Markdown" });
     }
   });
 }

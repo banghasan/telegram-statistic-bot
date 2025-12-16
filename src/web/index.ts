@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { api } from "./routes/api";
@@ -19,4 +18,3 @@ app.get("/style.css", serveStatic({ path: "src/webapp/style.css" }));
 app.get("/script.js", serveStatic({ path: "src/webapp/script.js" }));
 
 export default app;
-
