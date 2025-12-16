@@ -147,7 +147,7 @@ docker-compose up -d
 ````
 ### Database Migration
 
-To run database migrations inside the Docker environment, use the provided `migrator` service:
+Migrations are now bundled in the Docker image. To apply them:
 
 ```bash
 docker-compose run --rm migrator

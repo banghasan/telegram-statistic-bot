@@ -9,13 +9,11 @@ services:
       - ./config.yml:/app/config.yml
 
   migrator:
-    build:
-      context: .
-      target: builder
-    platform: linux/amd64 # Force amd64 if needed, or omit for auto. bun works on arm64 too.
+    image: ghcr.io/banghasan/telegram-statistic-bot:latest
+    container_name: telegram_stats_migrator
     volumes:
       - ./config.yml:/app/config.yml
-    command: bun run db:push
+    command: /app/migrate
     profiles: [ "tools" ] # Don't start with 'up' automatically
     # Optional: Network configuration if using a separate database container
     # networks:
