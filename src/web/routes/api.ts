@@ -1,8 +1,8 @@
 import { Hono } from "hono";
 import config from "../../config";
+import { logger } from "../../logger";
 import { statsService } from "../../services/stats.service";
 import { verifyTelegramWebApp } from "../middlewares/auth";
-import { logger } from "../../logger";
 
 const api = new Hono();
 

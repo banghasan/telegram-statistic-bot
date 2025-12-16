@@ -13,14 +13,14 @@ services:
     container_name: telegram_stats_migrator
     volumes:
       - ./config.yml:/app/config.yml
+      # - ./webapp:/app/src/webapp # jika ingin memodifikasi tampilan webapp
     environment:
       - NODE_ENV=production
-    entrypoint: [ "/app/migrate" ]
-    profiles: [ "tools" ] # Don't start with 'up' automatically
+    entrypoint: ["/app/migrate"]
+    profiles: ["tools"] # Don't start with 'up' automatically
     # Optional: Network configuration if using a separate database container
     # networks:
     #   - bot-net
-
     # networks:
     #   bot-net:
     #     driver: bridge
