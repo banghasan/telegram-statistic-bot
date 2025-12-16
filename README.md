@@ -144,35 +144,10 @@ bun run dev
 docker-compose up -d
 ```
 
-````
 ### Database Migration
 
 Migrations are now bundled in the Docker image. To apply them:
 
 ```bash
 docker-compose run --rm migrator
-````
-
-### Manual Docker Run
-
-```bash
-docker run -d \
-  --name telegram-stats-bot \
-  -p 3000:3000 \
-  -v $(pwd)/config.yml:/app/config.yml \
-  ghcr.io/banghasan/telegram-statistic-bot:latest
 ```
-
-### Build & Publish (GitHub Actions)
-
-This repository includes a manual workflow to build and push the Docker image to
-GitHub Container Registry (GHCR).
-
-1. Go to the **Actions** tab in GitHub.
-2. Select **Docker Build and Publish**.
-3. Click **Run workflow**.
-4. Enter the desired tag (default: `latest`).
-
-## License
-
-MIT
