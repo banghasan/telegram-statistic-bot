@@ -5,6 +5,14 @@ import { api } from "./routes/api";
 const app = new Hono();
 
 // API Routes
+import { runtimeState } from "../config";
+
+const publicApi = new Hono();
+publicApi.get("/info", (c) => {
+  return c.json({ botUsername: runtimeState.botUsername });
+});
+
+app.route("/api/public", publicApi);
 app.route("/api", api);
 
 // Static files

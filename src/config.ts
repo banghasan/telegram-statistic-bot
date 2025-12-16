@@ -101,3 +101,5 @@ if (!result.success) {
 const config = result.data;
 
 export default config;
+
+export const runtimeState = { botUsername: "" };

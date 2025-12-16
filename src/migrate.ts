@@ -1,42 +1,56 @@
+import path from "node:path";
+import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
+import mysql from "mysql2/promise";
 // import { initializeDatabase, getDb } from "./db";
 import config from "./config";
-import { logger } from "./logger";
-import mysql from "mysql2/promise";
-import { drizzle } from "drizzle-orm/mysql2";
 import * as schema from "./db/schema";
-import path from "path";
+
+// import { logger } from "./logger";
 
 async function runMigrations() {
-  logger.info("Starting database migration...");
-
-  // Create connection specifically for migration (need to ensure DB exists? Drizzle migrator handles tables)
-  // We assume DB exists as per config
-  
-  const connection = await mysql.createConnection({
-    host: config.database.host,
-    port: config.database.port,
-    user: config.database.username,
-    password: config.database.password,
-    database: config.database.database,
-    multipleStatements: true, 
-  });
-
-  const db = drizzle(connection, { schema, mode: "default" });
+  console.log("🚀 Starting database migration script...");
+  console.log(
+    `📡 Connecting to database at ${config.database.host}:${config.database.port}...`
+  );
 
   try {
+    // 1. Connect without database selected to ensure we can create it
+    const connection = await mysql.createConnection({
+      host: config.database.host,
+      port: config.database.port,
+      user: config.database.username,
+      password: config.database.password,
+      multipleStatements: true,
+    });
+
+    console.log("✅ Connected to MySQL server.");
+
+    // 2. Create database if it doesn't exist
+    const dbName = config.database.database;
+    console.log(`📦 Ensuring database '${dbName}' exists...`);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
+    console.log(`✅ Database '${dbName}' check passed.`);
+
+    // 3. Switch to the database
+    await connection.changeUser({ database: dbName });
+    console.log(`📂 Switched to database '${dbName}'.`);
+
+    // 4. Initialize Drizzle
+    const db = drizzle(connection, { schema, mode: "default" });
+
+    // 5. Run Migrations
     // Look for migrations folder relative to the executable or current working directory
     const migrationsFolder = path.resolve(process.cwd(), "drizzle");
-    logger.info(`Reading migrations from: ${migrationsFolder}`);
+    console.log(`📂 Reading migrations from: ${migrationsFolder}`);
 
     await migrate(db, { migrationsFolder });
-    logger.info("✅ Database migration completed successfully!");
-    
+    console.log("🎉 Database migration completed successfully!");
+
     await connection.end();
     process.exit(0);
   } catch (error) {
-    logger.error({ err: error }, "❌ Database migration failed!");
-    await connection.end();
+    console.error("❌ Migration failed!", error);
     process.exit(1);
   }
 }

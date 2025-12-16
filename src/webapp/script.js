@@ -4,7 +4,7 @@ document.addEventListener("alpine:init", () => {
     error: null,
     user: window.Telegram.WebApp.initDataUnsafe?.user,
     isAdmin: false,
-    view: "stats", // stats, groups, users
+    view: "stats", // stats, groups, users, restricted
 
     // Stats Data
     stats: {},
@@ -19,19 +19,41 @@ document.addEventListener("alpine:init", () => {
     usersPage: 1,
     usersTotalPages: 1,
 
-    async init() {
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand();
+    // New properties
+    restricted: false,
+    botUsername: "",
 
-      // Set theme colors
+    async init() {
+      // Check if running inside Telegram
+      if (!window.Telegram?.WebApp?.initData) {
+        this.restricted = true;
+        this.view = "restricted";
+        this.loading = true;
+
+        try {
+          const res = await fetch("/api/public/info");
+          const data = await res.json();
+          this.botUsername = data.botUsername;
+        } catch (_e) {
+          this.error = "Failed to load bot info";
+        } finally {
+          this.loading = false;
+        }
+        return;
+      }
+
+      window.Telegram.WebApp.ready();
+      window.Telegram.WebApp.expand(); // Optional: Expand to full height
+
+      // Set theme parameters
       this.applyTheme();
 
-      try {
-        if (!window.Telegram.WebApp.initData) {
-          // Mock for local dev if needed, or throw
-          // throw new Error("Please open from Telegram");
-        }
+      // Listen for theme changes
+      window.Telegram.WebApp.onEvent("themeChanged", () => {
+        this.applyTheme();
+      });
 
+      try {
         await this.fetchMyStats();
       } catch (e) {
         this.error = e.message;

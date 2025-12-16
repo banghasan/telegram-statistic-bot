@@ -1,6 +1,6 @@
 import { Bot } from "gramio";
 import { loadCommands } from "./commands";
-import config from "./config";
+import config, { runtimeState } from "./config";
 import { initializeDatabase } from "./db";
 import app from "./web";
 
@@ -17,6 +17,7 @@ import { logger } from "./logger";
 // --- STARTUP ---
 async function start() {
   const botInfo = await bot.api.getMe();
+  runtimeState.botUsername = botInfo.username || "";
   logger.info(`Starting bot @${botInfo.username}...`);
 
   const { host, port } = config.server;

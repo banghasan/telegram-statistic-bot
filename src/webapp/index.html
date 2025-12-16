@@ -13,6 +13,23 @@
     </head>
     <body class="bg-tg-bg text-tg-text font-sans antialiased p-4">
         <div x-data="statsApp" class="container mx-auto max-w-2xl">
+            <!-- View: Restricted Access -->
+            <div x-show="view === 'restricted'" x-transition class="text-center py-10">
+                <div class="text-6xl mb-4">🤖</div>
+                <h1 class="text-2xl font-bold mb-4">Access Denied</h1>
+                <p class="mb-6">
+                    Web ini hanya dapat diakses melalui Telegram Bot username: 
+                    <span class="font-mono bg-gray-800 px-2 py-1 rounded" x-text="botUsername"></span>
+                </p>
+                <a
+                    :href="'https://t.me/' + botUsername"
+                    target="_blank"
+                    class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition"
+                >
+                    Open Telegram Bot
+                </a>
+            </div>
+
             <!-- Loading overlay -->
             <div
                 x-show="loading"
@@ -30,7 +47,7 @@
             </div>
 
             <!-- Navigation (Admin Only) -->
-            <template x-if="isAdmin">
+            <template x-if="!restricted && isAdmin">
                 <div class="flex space-x-2 mb-6 justify-center">
                     <button
                         @click="view = 'stats'"
