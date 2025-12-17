@@ -71,26 +71,53 @@ cp config.example.yml config.yml
 Edit `config.yml`:
 
 ```yaml
-bot:
-  token: "YOUR_BOT_TOKEN_HERE"
-  mode: "polling" # or "webhook"
-  webhook:
-    url: "https://your-domain.com/bot" # Required for webhook mode
-    port: 8101
+# General Bot Configuration
+timezone: "Asia/Jakarta"
 
+# The time in seconds to wait before deleting the /stats message in groups.
+# Set to 0 to disable.
+delete_message_delay: 60
+
+# Telegram Bot Configuration
+bot:
+  # Your Telegram bot token from @BotFather
+  token: "YOUR_BOT_TOKEN"
+
+  # The mode to run the bot in. Can be 'polling' or 'webhook'.
+  mode: "polling"
+
+  # Settings for webhook mode
+  webhook:
+    # The public URL for your webhook (e.g., https://your-domain.com/bot)
+    # This should point to the server host and port defined below.
+    url: "https://example.com/bot"
+
+# Mini Web App Configuration
+webapp:
+  # The public URL of your Mini Web App
+  # This is the URL that will be opened from the /stats command
+  url: "YOUR_WEB_APP_URL"
+
+# Server configuration for the Web App and/or Webhook
+server:
+  host: "localhost"
+  port: 8101
+
+# Database configuration
 database:
+  # Connection details for MariaDB
   host: "localhost"
   port: 3306
   username: "root"
   password: "password"
   database: "telegram_stats"
 
-webapp:
-  url: "https://your-domain.com" # URL where the webapp is hosted
-
-owner: 123456789 # Your Telegram User ID
-admins: # List of Admin IDs
+# User IDs for access control
+owner: 123456789
+admins:
   - 987654321
+  - 112233445
+
 ```
 
 ### 3. Database Migration
