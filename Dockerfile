@@ -23,6 +23,6 @@ USER bun
 EXPOSE 8101
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8101/health || exit 1
+    CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:8101/health || exit 1
 
 ENTRYPOINT ["bun", "run", "src/bot.ts"]
