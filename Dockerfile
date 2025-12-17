@@ -1,5 +1,5 @@
 # STAGE 1: Install dependencies
-FROM oven/bun:1.1-alpine AS selector
+FROM oven/bun:1.3-alpine AS selector
 WORKDIR /app
 
 # Hanya copy file manifest untuk memanfaatkan cache layer
@@ -7,7 +7,7 @@ COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production
 
 # STAGE 2: Final Runtime Image
-FROM oven/bun:1.1-alpine
+FROM oven/bun:1.3-alpine
 WORKDIR /app
 
 # Set environment ke production
