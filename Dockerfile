@@ -17,7 +17,7 @@ EXPOSE 3000
 
 # Healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["bun", "run", "healthcheck.ts"]
+    CMD ["bun", "run", "src/healthcheck.ts"]
 
 # Set the entrypoint
-ENTRYPOINT ["bun", "run", "bot.ts"]
+ENTRYPOINT ["bun", "run", "src/bot.ts"]
