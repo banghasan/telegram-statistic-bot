@@ -42,9 +42,7 @@
       "compositePrimaryKeys": {
         "banned_id": {
           "name": "banned_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -97,10 +95,7 @@
       "compositePrimaryKeys": {
         "detail_user_group_user_id_group_id_pk": {
           "name": "detail_user_group_user_id_group_id_pk",
-          "columns": [
-            "user_id",
-            "group_id"
-          ]
+          "columns": ["user_id", "group_id"]
         }
       },
       "uniqueConstraints": {},
@@ -231,9 +226,7 @@
       "compositePrimaryKeys": {
         "groups_id": {
           "name": "groups_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -348,9 +341,7 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

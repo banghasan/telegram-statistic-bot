@@ -26,9 +26,7 @@ export const groups = mysqlTable("groups", {
   sticker: int("sticker").default(0),
   media: int("media").default(0),
   deleted: int("deleted").default(0),
-  createdAt: datetime("createdAt")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: datetime("updatedAt")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
@@ -46,9 +44,7 @@ export const users = mysqlTable("users", {
   media: int("media").default(0),
   deleted: int("deleted").default(0),
   last_activity: varchar("last_activity", { length: 255 }), // text/video/audio, etc
-  createdAt: datetime("createdAt")
-    .notNull()
-    .default(sql`CURRENT_TIMESTAMP`),
+  createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: datetime("updatedAt")
     .notNull()
     .default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
@@ -60,16 +56,14 @@ export const detail_user_group = mysqlTable(
     user_id: bigint("user_id", { mode: "number" }).notNull(),
     group_id: bigint("group_id", { mode: "number" }).notNull(),
     message: int("message").default(0),
-    createdAt: datetime("createdAt")
-      .notNull()
-      .default(sql`CURRENT_TIMESTAMP`),
+    createdAt: datetime("createdAt").notNull().default(sql`CURRENT_TIMESTAMP`),
     updatedAt: datetime("updatedAt")
       .notNull()
       .default(sql`CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP`),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.user_id, table.group_id] }),
-  }),
+  })
 );
 
 export const banned = mysqlTable("banned", {

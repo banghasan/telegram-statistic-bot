@@ -14,8 +14,7 @@ function isWebAppConfigured(): boolean {
 }
 
 export function loadStatsCommand(bot: Bot) {
-  // biome-ignore lint/suspicious/noExplicitAny: Context type is complex
-  bot.command("stats", async (context: any) => {
+  bot.command("stats", async (context) => {
     const { from, chat } = context;
     if (!from) return;
 
@@ -31,11 +30,11 @@ export function loadStatsCommand(bot: Bot) {
       });
     }
 
-    let sentMessage;
+    let sentMessage: unknown;
     if (isWebAppConfigured() && chat.type === "private") {
       const keyboard = new InlineKeyboard().webApp(
         "🌐 Open Web App",
-        config.webapp.url,
+        config.webapp.url
       );
       sentMessage = await context.reply(message, {
         parse_mode: "Markdown",
@@ -51,8 +50,10 @@ export function loadStatsCommand(bot: Bot) {
       config.delete_message_delay > 0 &&
       sentMessage
     ) {
-      const chatId = sentMessage.chat.id;
-      const messageId = sentMessage.id;
+      // Type assertion for the sent message since we know it's a message object
+      const messageObj = sentMessage as any;
+      const chatId = messageObj.chat.id;
+      const messageId = messageObj.id;
 
       setTimeout(() => {
         bot.api

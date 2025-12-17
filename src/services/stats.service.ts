@@ -340,7 +340,7 @@ export const statsService = {
   formatStatsMessage(
     // biome-ignore lint/suspicious/noExplicitAny: User stats object is dynamic
     userStats: any,
-    user: { firstName: string; lastName?: string },
+    user: { firstName: string; lastName?: string }
   ): string {
     return (
       `📊 *Your Statistics*\n` +

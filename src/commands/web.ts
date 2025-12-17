@@ -1,5 +1,5 @@
 import { InlineKeyboard } from "@gramio/keyboards";
-import type { Bot, Context } from "gramio";
+import type { Bot } from "gramio";
 import config from "../config";
 
 function isWebAppConfigured(): boolean {
@@ -12,7 +12,7 @@ function isWebAppConfigured(): boolean {
 }
 
 export function loadWebCommand(bot: Bot) {
-  bot.command("web", async (context: Context) => {
+  bot.command("web", async (context) => {
     const { from, chat } = context;
     if (!from) return;
 

@@ -1,7 +1,7 @@
-import type { Bot, Context } from "gramio";
+import type { Bot } from "gramio";
 
 export function loadPingCommand(bot: Bot) {
-  bot.command("ping", async (context: Context) => {
+  bot.command("ping", async (context) => {
     const startTime = performance.now();
     const msg = await context.reply("Pong!");
     const endTime = performance.now();

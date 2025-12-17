@@ -24,6 +24,12 @@ async function start() {
 
   try {
     if (config.bot.mode === "webhook") {
+      if (!config.bot.webhook) {
+        throw new Error(
+          "Webhook configuration is required when mode is 'webhook'"
+        );
+      }
+
       const webhookUrl = new URL(config.bot.webhook.url);
       logger.info(`Starting in webhook mode...`);
 
@@ -43,7 +49,7 @@ async function start() {
 
       await bot.api.setWebhook({ url: config.bot.webhook.url });
       logger.info(
-        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`,
+        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`
       );
     } else {
       // Polling mode
@@ -59,7 +65,7 @@ async function start() {
 
       bot.start(); // Start polling
       logger.info(
-        `Web server for Mini App listening on http://${host}:${port}`,
+        `Web server for Mini App listening on http://${host}:${port}`
       );
     }
   } catch (error) {

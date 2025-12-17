@@ -144,7 +144,7 @@ document.addEventListener("alpine:init", () => {
       root.style.setProperty("--tg-button-text", p.button_text_color || "#fff");
       root.style.setProperty(
         "--tg-secondary-bg",
-        p.secondary_bg_color || "#f4f4f5",
+        p.secondary_bg_color || "#f4f4f5"
       );
     },
   }));

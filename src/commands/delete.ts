@@ -13,7 +13,7 @@ export function loadDeleteCommand(bot: Bot) {
     await statsService.processMessageDelete(ctx);
 
     return ctx.reply(
-      `🗑️ Simulated a message deletion for user ${ctx.from.first_name}.`
+      `🗑️ Simulated a message deletion for user ${ctx.from.firstName}.`
     );
   });
 }

@@ -1,10 +1,14 @@
 import { Hono } from "hono";
 import config from "../../config";
-import { logger } from "../../logger";
 import { statsService } from "../../services/stats.service";
 import { verifyTelegramWebApp } from "../middlewares/auth";
 
-const api = new Hono();
+// Extend Hono context type to include user
+type Variables = {
+  user: { id: number };
+};
+
+const api = new Hono<{ Variables: Variables }>();
 
 // Apply auth middleware to all routes in this group
 api.use("*", verifyTelegramWebApp);
