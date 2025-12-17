@@ -48,11 +48,18 @@ export function loadStatsCommand(bot: Bot) {
     if (
       chat.type !== "private" &&
       config.delete_message_delay &&
-      config.delete_message_delay > 0
+      config.delete_message_delay > 0 &&
+      sentMessage
     ) {
+      const chatId = sentMessage.chat.id;
+      const messageId = sentMessage.id;
+
       setTimeout(() => {
-        context.api
-          .deleteMessage(sentMessage.chat.id, sentMessage.message_id)
+        bot.api
+          .deleteMessage({
+            chat_id: chatId,
+            message_id: messageId,
+          })
           .catch(console.error);
       }, config.delete_message_delay * 1000);
     }
