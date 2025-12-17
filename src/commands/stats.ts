@@ -50,19 +50,21 @@ export function loadStatsCommand(bot: Bot) {
       config.delete_message_delay > 0 &&
       sentMessage
     ) {
-      // Type assertion for the sent message since we know it's a message object
-      const messageObj = sentMessage as any;
-      const chatId = messageObj.chat.id;
-      const messageId = messageObj.id;
+      // Check if the sentMessage has necessary properties before accessing them
+      const messageObj = sentMessage as { chat: { id: number }; id: number };
+      if (messageObj?.chat?.id && messageObj?.id) {
+        const chatId = messageObj.chat.id;
+        const messageId = messageObj.id;
 
-      setTimeout(() => {
-        bot.api
-          .deleteMessage({
-            chat_id: chatId,
-            message_id: messageId,
-          })
-          .catch(console.error);
-      }, config.delete_message_delay * 1000);
+        setTimeout(() => {
+          bot.api
+            .deleteMessage({
+              chat_id: chatId,
+              message_id: messageId,
+            })
+            .catch(console.error);
+        }, config.delete_message_delay * 1000);
+      }
     }
   });
 }
