@@ -1,6 +1,10 @@
 # General Bot Configuration
 timezone: "Asia/Jakarta"
 
+# The time in seconds to wait before deleting the /stats message in groups.
+# Set to 0 to disable.
+delete_message_delay: 60
+
 # Telegram Bot Configuration
 bot:
   # Your Telegram bot token from @BotFather

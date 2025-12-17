@@ -21,40 +21,40 @@ export function loadStatsCommand(bot: Bot) {
 
     const userStats = await statsService.getUserStat(from.id);
 
+    let message: string;
     if (!userStats) {
-      const message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
-
-      if (isWebAppConfigured() && chat.type === "private") {
-        const keyboard = new InlineKeyboard().webApp(
-          "🌐 Open Web App",
-          config.webapp.url
-        );
-        await context.reply(message, {
-          parse_mode: "Markdown",
-          reply_markup: keyboard,
-        });
-      } else {
-        await context.reply(message, { parse_mode: "Markdown" });
-      }
-      return;
+      message = `📊 *Your Statistics*\n\nNo activity recorded yet. Start chatting to see your stats here!`;
+    } else {
+      message = statsService.formatStatsMessage(userStats, {
+        firstName: from.firstName,
+        lastName: from.lastName,
+      });
     }
 
-    const message = statsService.formatStatsMessage(userStats, {
-      firstName: from.firstName,
-      lastName: from.lastName,
-    });
-
+    let sentMessage;
     if (isWebAppConfigured() && chat.type === "private") {
       const keyboard = new InlineKeyboard().webApp(
         "🌐 Open Web App",
-        config.webapp.url
+        config.webapp.url,
       );
-      await context.reply(message, {
+      sentMessage = await context.reply(message, {
         parse_mode: "Markdown",
         reply_markup: keyboard,
       });
     } else {
-      await context.reply(message, { parse_mode: "Markdown" });
+      sentMessage = await context.reply(message, { parse_mode: "Markdown" });
+    }
+
+    if (
+      chat.type !== "private" &&
+      config.delete_message_delay &&
+      config.delete_message_delay > 0
+    ) {
+      setTimeout(() => {
+        context.api
+          .deleteMessage(sentMessage.chat.id, sentMessage.message_id)
+          .catch(console.error);
+      }, config.delete_message_delay * 1000);
     }
   });
 }

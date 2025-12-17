@@ -25,7 +25,7 @@ const BotConfigSchema = z
     {
       message: "Webhook URL is required when mode is 'webhook'",
       path: ["webhook", "url"],
-    }
+    },
   );
 
 const DatabaseConfigSchema = z.object({
@@ -47,6 +47,7 @@ const ServerConfigSchema = z.object({
 
 const ConfigSchema = z.object({
   timezone: z.string().default("Asia/Jakarta"),
+  delete_message_delay: z.number().default(60),
   bot: BotConfigSchema,
   webapp: WebAppConfigSchema,
   server: ServerConfigSchema,
@@ -70,7 +71,7 @@ try {
 } catch (_e) {
   console.error("Error reading or parsing config.yml file.");
   console.error(
-    "Please make sure 'config.yml' exists and is a valid YAML file."
+    "Please make sure 'config.yml' exists and is a valid YAML file.",
   );
   console.error("You can copy 'config.example.yml' to get started.");
   process.exit(1);
