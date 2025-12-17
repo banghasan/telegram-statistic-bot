@@ -1,10 +1,13 @@
-name: Build and Push Docker.io
+name: Docker.io - Build and Push
 
 on:
-  push:
-    branches: [main, master]
-  release:
-    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Docker image tag (default: latest)"
+        required: false
+        default: "latest"
+        type: string
 
 env:
   IMAGE_NAME: banghasan/telegram-statistic-bot
@@ -26,17 +29,15 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Extract metadata (tags, labels) for Docker
+      - name: Set Docker tags
         id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=tag
-            type=ref,event=pr
-            type=sha,prefix={{branch}}-
-            latest
+        run: |
+          if [ -z "${{ inputs.tag }}" ]; then
+            TAG="latest"
+          else
+            TAG="${{ inputs.tag }}"
+          fi
+          echo "tags=${{ env.IMAGE_NAME }}:$TAG" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -45,6 +46,5 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
