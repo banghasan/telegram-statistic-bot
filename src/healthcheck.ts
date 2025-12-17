@@ -1,8 +1,8 @@
 import config from "./config";
 
 async function check() {
-  const port = config.server.port || 3000;
-  const url = `http://127.0.0.1:${port}/health`;
+  const port = config.server.port || 8101;
+  const url = `http://localhost:${port}/health`;
 
   try {
     const response = await fetch(url);
