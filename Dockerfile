@@ -16,8 +16,8 @@ COPY . .
 EXPOSE 3000
 
 # Healthcheck
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["bun", "run", "src/healthcheck.ts"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD bun run --eval "fetch('http://localhost:8101/health').then(r => { if(r.status !== 200) throw new Error('Health check failed'); console.log('Health check passed'); }).catch(e => { console.error('Health check failed:', e); process.exit(1); })"
 
 # Set the entrypoint
 ENTRYPOINT ["bun", "run", "src/bot.ts"]
