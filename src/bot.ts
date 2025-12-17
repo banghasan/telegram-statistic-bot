@@ -1,4 +1,4 @@
-import { Bot } from "gramio";
+import { Bot, webhookHandler } from "gramio";
 import { loadCommands } from "./commands";
 import config, { runtimeState } from "./config";
 import { initializeDatabase } from "./db";
@@ -28,9 +28,7 @@ async function start() {
       logger.info(`Starting in webhook mode...`);
 
       // Mount webhook handler to Hono
-      app.post(webhookUrl.pathname, async (c) => {
-        return bot.webhookCallback(c.req.raw, "std/http");
-      });
+      app.post(webhookUrl.pathname, webhookHandler(bot, "hono"));
 
       // Start Hono server
       Bun.serve({
@@ -41,7 +39,7 @@ async function start() {
 
       await bot.api.setWebhook({ url: config.bot.webhook.url });
       logger.info(
-        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`
+        `Server listening on http://${host}:${port}. Webhook set to ${config.bot.webhook.url}`,
       );
     } else {
       // Polling mode
@@ -57,7 +55,7 @@ async function start() {
 
       bot.start(); // Start polling
       logger.info(
-        `Web server for Mini App listening on http://${host}:${port}`
+        `Web server for Mini App listening on http://${host}:${port}`,
       );
     }
   } catch (error) {
