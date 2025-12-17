@@ -1,31 +1,51 @@
-# STAGE 1: Install dependencies
-FROM oven/bun:1.3-alpine AS selector
+# ==========================================
+# STAGE 1: Build (Kompilasi ke Binari)
+# ==========================================
+FROM oven/bun:1.3-alpine AS builder
 WORKDIR /app
 
-# Hanya copy file manifest untuk memanfaatkan cache layer
-COPY package.json bun.lock ./
+# Salin manifest dan install dependencies
+# Gunakan wildcard agar fleksibel dengan bun.lock atau bun.lockb
+COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile --production
 
-# STAGE 2: Final Runtime Image
-FROM oven/bun:1.3-alpine
-WORKDIR /app
-
-# Set environment ke production
-ENV NODE_ENV=production
-
-# Hanya salin node_modules yang sudah "bersih" dari stage sebelumnya
-COPY --from=selector /app/node_modules ./node_modules
+# Salin seluruh source code
 COPY . .
 
-# Expose port
-EXPOSE 3000
+# Kompilasi ke binary tunggal
+# --minify: memperkecil ukuran binari
+# --bytecode: mempercepat startup
+RUN bun build ./src/bot.ts --compile --minify --bytecode --outfile bot-app
 
-# Healthcheck yang lebih efisien
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
-    # CMD bun run --eval "fetch('http://localhost:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-    CMD bun run --eval "fetch('http://localhost:8101/health').then(r => { if(r.status !== 200) throw new Error('Health check failed'); console.log('Health check passed'); }).catch(e => { console.error('Health check failed:', e); process.exit(1); })"
+# ==========================================
+# STAGE 2: Runtime (Image Terkecil)
+# ==========================================
+FROM alpine:3.19
+WORKDIR /app
 
-# Gunakan USER non-root untuk keamanan (User 'bun' sudah ada di image resmi)
-USER bun
+# Install library esensial yang dibutuhkan binary Bun di Alpine
+# wget sudah termasuk di dalam paket dasar Alpine
+RUN apk add --no-cache libstdc++ libgcc tzdata
 
-ENTRYPOINT ["bun", "run", "src/bot.ts"]
+# Salin file binary dari stage builder
+COPY --from=builder /app/bot-app .
+
+# (Opsional) Set timezone ke Jakarta agar log bot akurat
+ENV TZ=Asia/Jakarta
+
+# Gunakan user non-root demi keamanan
+RUN adduser -D botuser
+USER botuser
+
+# Port yang diexpose (sesuaikan dengan port bot Anda)
+EXPOSE 8101
+
+# Healthcheck menggunakan wget
+# --spider: hanya cek koneksi tanpa download file
+# -q: mode quiet (diam)
+# -O -: output ke stdout
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8101/health || exit 1
+
+# Jalankan aplikasi
+ENTRYPOINT ["./bot-app"]
