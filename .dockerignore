@@ -1,10 +1,25 @@
-node_modules
+# Abaikan folder dependency lokal
+node_modules/
+bun.lockb
+bun.lock
+
+# Abaikan folder Git
 .git
-.env
+.gitignore
+
+# Abaikan file Docker itu sendiri
 Dockerfile
+docker-compose.yml
 .dockerignore
-README.md
-dist
-tests
+
+# Abaikan dokumentasi dan log
+*.md
+npm-debug.log
+yarn-error.log
+.env
+
+# Abaikan folder build/test jika ada
+dist/
+tests/
 *.log
 *.bak
