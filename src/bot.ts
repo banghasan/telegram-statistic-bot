@@ -29,6 +29,10 @@ async function start() {
 
       // Mount webhook handler to Hono
       app.post(webhookUrl.pathname, webhookHandler(bot, "hono"));
+      // Add GET handler for debugging webhook path
+      app.get(webhookUrl.pathname, (c) => {
+        return c.json({ status: true });
+      });
 
       // Start Hono server
       Bun.serve({
