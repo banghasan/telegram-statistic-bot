@@ -25,6 +25,9 @@ document.addEventListener("alpine:init", () => {
     botUsername: "",
 
     async init() {
+      // Optimize for mobile viewports
+      this.optimizeMobileViewport();
+
       // Check if running inside Telegram
       if (!window.Telegram?.WebApp?.initData) {
         this.restricted = true;
@@ -43,8 +46,10 @@ document.addEventListener("alpine:init", () => {
         return;
       }
 
-      window.Telegram.WebApp.ready();
-      window.Telegram.WebApp.expand(); // Optional: Expand to full height
+      if (window.Telegram?.WebApp?.ready) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand(); // Optional: Expand to full height
+      }
 
       // Set theme parameters
       this.applyTheme();
@@ -54,12 +59,28 @@ document.addEventListener("alpine:init", () => {
         this.applyTheme();
       });
 
+      // Listen for viewport changes
+      window.Telegram.WebApp.onEvent("viewportChanged", () => {
+        this.optimizeMobileViewport();
+      });
+
       try {
         await this.fetchMyStats();
       } catch (e) {
         this.error = e.message;
       } finally {
         this.loading = false;
+      }
+    },
+
+    optimizeMobileViewport() {
+      // Ensure proper viewport meta tag settings
+      const viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (viewportMeta) {
+        viewportMeta.setAttribute(
+          "content",
+          "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        );
       }
     },
 
@@ -89,6 +110,8 @@ document.addEventListener("alpine:init", () => {
         this.groupsList = data.groups;
         this.groupsPage = data.currentPage;
         this.groupsTotalPages = data.totalPages;
+        // Scroll to top after loading
+        this.scrollToTop();
       } catch (_e) {
         this.error = "Failed to load groups";
       } finally {
@@ -104,11 +127,20 @@ document.addEventListener("alpine:init", () => {
         this.usersList = data.users;
         this.usersPage = data.currentPage;
         this.usersTotalPages = data.totalPages;
+        // Scroll to top after loading
+        this.scrollToTop();
       } catch (_e) {
         this.error = "Failed to load users";
       } finally {
         this.loading = false;
       }
+    },
+
+    scrollToTop() {
+      // Smooth scroll to top for better UX
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }, 100);
     },
 
     formatNumber(num) {
@@ -118,13 +150,13 @@ document.addEventListener("alpine:init", () => {
     formatDate(dateString) {
       if (!dateString) return "-";
       const date = new Date(dateString);
+      // Shorter date format for mobile
       return new Intl.DateTimeFormat("en-GB", {
         day: "numeric",
         month: "short",
-        year: "numeric",
+        year: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
-        second: "2-digit",
         hour12: false,
       })
         .format(date)
