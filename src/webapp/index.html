@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
         <title>Telegram Stats</title>
         <script src="https://telegram.org/js/telegram-web-app.js"></script>
         <script
@@ -11,375 +11,256 @@
         ></script>
         <link rel="stylesheet" href="style.css" />
     </head>
-    <body class="bg-tg-bg text-tg-text font-sans antialiased p-4">
-        <div x-data="statsApp" class="container mx-auto max-w-2xl">
+    <body>
+        <div x-data="statsApp" class="app-container">
+        <div x-data="statsApp" class="app-container">
             <!-- View: Restricted Access -->
             <div
                 x-show="view === 'restricted'"
                 x-transition
-                class="text-center py-10"
+                class="restricted-view"
             >
-                <div class="text-6xl mb-4">🤖</div>
-                <h1 class="text-2xl font-bold mb-4">Access Denied</h1>
-                <p class="mb-6">
-                    Web ini hanya dapat diakses melalui Telegram Bot username:
-                    <span
-                        class="font-mono bg-gray-800 px-2 py-1 rounded"
-                        x-text="botUsername"
-                    ></span>
-                </p>
-                <a
-                    :href="'https://t.me/' + botUsername"
-                    target="_blank"
-                    class="inline-block bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition"
-                >
-                    Open Telegram Bot
-                </a>
+                <div class="restricted-content">
+                    <div class="restricted-icon">🤖</div>
+                    <h1 class="restricted-title">Access Denied</h1>
+                    <p class="restricted-text">
+                        This web app can only be accessed through Telegram Bot:
+                        <strong x-text="botUsername"></strong>
+                    </p>
+                    <a
+                        :href="'https://t.me/' + botUsername"
+                        target="_blank"
+                        class="btn-primary"
+                    >
+                        Open Bot
+                    </a>
+                </div>
             </div>
 
             <!-- Loading overlay -->
-            <div
-                x-show="loading"
-                class="fixed inset-0 flex items-center justify-center bg-tg-bg z-50"
-            >
+            <div x-show="loading" class="loading-overlay">
                 <div class="loader"></div>
             </div>
 
             <!-- Error Message -->
-            <div
-                x-show="error"
-                class="text-red-500 text-center mb-4"
-                x-text="error"
-            ></div>
+            <div x-show="error" class="error-banner" x-text="error"></div>
 
             <!-- Navigation (Admin Only) -->
             <template x-if="!restricted && isAdmin">
-                <div class="flex space-x-2 mb-6 justify-center">
+                <nav class="tab-nav">
                     <button
                         @click="view = 'stats'"
                         :class="{'active': view === 'stats'}"
-                        class="nav-btn"
+                        class="tab-btn"
                     >
-                        My Stats
+                        <span class="tab-icon">📊</span>
+                        <span class="tab-label">Stats</span>
                     </button>
                     <button
                         @click="loadGroups(1)"
                         :class="{'active': view === 'groups'}"
-                        class="nav-btn"
+                        class="tab-btn"
                     >
-                        Groups
+                        <span class="tab-icon">👥</span>
+                        <span class="tab-label">Groups</span>
                     </button>
                     <button
                         @click="loadUsers(1)"
                         :class="{'active': view === 'users'}"
-                        class="nav-btn"
+                        class="tab-btn"
                     >
-                        Users
+                        <span class="tab-icon">👤</span>
+                        <span class="tab-label">Users</span>
                     </button>
-                </div>
+                </nav>
             </template>
 
-            <!-- View: My Stats -->
-            <div x-show="view === 'stats'" x-transition>
-                <div class="text-center mb-8">
-                    <h1 class="text-3xl font-bold mb-2">
-                        Hallo
-                        <span
-                            x-text="user?.first_name + (user?.last_name ? ' ' + user?.last_name : '')"
-                        ></span
-                        >!
-                    </h1>
-                    <p class="text-tg-hint">
-                        Here are your personal statistics.
-                    </p>
-                </div>
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- View: My Stats -->
+                <div x-show="view === 'stats'" x-transition class="view-container">
+                    <!-- Header -->
+                    <div class="header-section">
+                        <h1 class="page-title">
+                            Hallo <span x-text="user?.first_name || 'undefined'"></span><span x-show="user?.last_name" x-text="' ' + user?.last_name"></span>!
+                        </h1>
+                        <p class="page-subtitle">Here are your personal statistics</p>
+                    </div>
 
-                <!-- General Stats in a more compact grid -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">💬</span>
-                            <span class="stat-label">Messages</span>
+                    <!-- Stats Grid -->
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-icon">💬</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Messages</div>
+                                <div class="stat-value" x-text="formatNumber(stats.message || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.message || 0)"
-                        ></div>
-                    </div>
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">📝</span>
-                            <span class="stat-label">Edited</span>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Edited</div>
+                                <div class="stat-value" x-text="formatNumber(stats.edited_message || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.edited_message || 0)"
-                        ></div>
-                    </div>
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">🗑️</span>
-                            <span class="stat-label">Deleted</span>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">🗑️</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Deleted</div>
+                                <div class="stat-value" x-text="formatNumber(stats.deleted || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.deleted || 0)"
-                        ></div>
-                    </div>
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">📑</span>
-                            <span class="stat-label">Words</span>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">📑</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Words</div>
+                                <div class="stat-value" x-text="formatNumber(stats.words || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.words || 0)"
-                        ></div>
-                    </div>
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">🖼️</span>
-                            <span class="stat-label">Media</span>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">🖼️</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Media</div>
+                                <div class="stat-value" x-text="formatNumber(stats.media || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.media || 0)"
-                        ></div>
-                    </div>
-                    <div class="stat-card p-4">
-                        <div class="flex items-center space-x-3 mb-1">
-                            <span class="text-2xl">😊</span>
-                            <span class="stat-label">Stickers</span>
+                        
+                        <div class="stat-item">
+                            <div class="stat-icon">😊</div>
+                            <div class="stat-content">
+                                <div class="stat-label">Stickers</div>
+                                <div class="stat-value" x-text="formatNumber(stats.sticker || 0)"></div>
+                            </div>
                         </div>
-                        <div
-                            class="stat-value text-2xl font-semibold"
-                            x-text="formatNumber(stats.sticker || 0)"
-                        ></div>
                     </div>
-                </div>
 
-                <!-- Group Activity Section -->
-                <div>
-                    <h2 class="text-xl font-bold mb-4">Your Group Activity</h2>
-                    <div class="overflow-x-auto rounded-lg bg-tg-secondary-bg">
-                        <table class="w-full text-left">
-                            <thead>
-                                <tr
-                                    class="text-tg-hint border-b border-tg-hint/20"
-                                >
-                                    <th class="p-3">Group</th>
-                                    <th class="p-3 text-right">Your Msgs</th>
-                                    <th class="p-3 text-right">
-                                        Last Activity
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <template x-if="groupsForUser.length === 0">
+                    <!-- Group Activity Section -->
+                    <div class="section">
+                        <h2 class="section-title">Your Group Activity</h2>
+                        <div class="card table-card">
+                            <table class="data-table">
+                                <thead>
                                     <tr>
-                                        <td
-                                            colspan="3"
-                                            class="p-4 text-center text-tg-hint"
-                                        >
-                                            No group activity found.
-                                        </td>
+                                        <th>Group</th>
+                                        <th class="text-right">Your Msgs</th>
+                                        <th class="text-right">Last Activity</th>
                                     </tr>
-                                </template>
-                                <template
-                                    x-for="group in groupsForUser"
-                                    :key="group.groupId"
-                                >
-                                    <tr class="border-b border-tg-hint/10">
-                                        <td
-                                            class="p-3 font-medium"
-                                            x-text="group.title"
-                                        ></td>
-                                        <td
-                                            class="p-3 text-right font-mono"
-                                            x-text="formatNumber(group.userMessageCount)"
-                                        ></td>
-                                        <td
-                                            class="p-3 text-right text-xs"
-                                            x-text="formatDate(group.lastActivity)"
-                                        ></td>
-                                    </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    <template x-if="groupsForUser.length === 0">
+                                        <tr>
+                                            <td colspan="3" class="empty-cell">
+                                                <div class="empty-state">
+                                                    <div class="empty-icon">📭</div>
+                                                    <div class="empty-text">No group activity found</div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                    <template x-for="group in groupsForUser" :key="group.groupId">
+                                        <tr>
+                                            <td class="font-medium" x-text="group.title"></td>
+                                            <td class="text-right" x-text="formatNumber(group.userMessageCount)"></td>
+                                            <td class="text-right text-sm" x-text="formatDate(group.lastActivity)"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- View: Groups -->
-            <div x-show="view === 'groups'" x-transition>
-                <h2 class="text-xl font-bold mb-4">
-                    Top Groups (&lt; 3 Months)
-                </h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-tg-hint border-b border-tg-hint/20">
-                                <th class="p-2">#</th>
-                                <th class="p-2">Type</th>
-                                <th class="p-2">Title</th>
-                                <th class="p-2">Username</th>
-                                <th class="p-2 text-right">Msgs</th>
-                                <th class="p-2 text-right">Deleted</th>
-                                <th class="p-2 text-right">Users</th>
-                                <th class="p-2 text-right">Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template
-                                x-for="(group, index) in groupsList"
-                                :key="group.id"
-                            >
-                                <tr class="border-b border-tg-hint/10">
-                                    <td
-                                        class="p-2"
-                                        x-text="(groupsPage - 1) * 5 + index + 1"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-xs"
-                                        x-text="group.type"
-                                    ></td>
-                                    <td
-                                        class="p-2 font-medium"
-                                        x-text="group.title"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-xs"
-                                        x-text="group.username || '-'"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(group.message)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(group.deleted || 0)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(group.users)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right text-xs"
-                                        x-text="formatDate(group.updatedAt)"
-                                    ></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
+                <!-- View: Groups -->
+                <div x-show="view === 'groups'" x-transition class="view-container">
+                    <div class="header-section">
+                        <h1 class="page-title">Top Groups</h1>
+                        <p class="page-subtitle">Activity from the last 3 months</p>
+                    </div>
+
+                    <div class="card">
+                        <template x-for="(group, index) in groupsList" :key="group.id">
+                            <div class="list-item">
+                                <div class="list-item-number" x-text="(groupsPage - 1) * 5 + index + 1"></div>
+                                <div class="list-item-content">
+                                    <div class="list-item-title" x-text="group.title"></div>
+                                    <div class="list-item-subtitle">
+                                        <span x-text="formatNumber(group.message)"></span> msgs • 
+                                        <span x-text="formatNumber(group.users)"></span> users
+                                    </div>
+                                </div>
+                                <div class="list-item-type" x-text="group.type[0].toUpperCase()"></div>
+                            </div>
+                        </template>
+                    </div>
+
+                    <div class="pagination">
+                        <button
+                            @click="loadGroups(groupsPage - 1)"
+                            :disabled="groupsPage <= 1"
+                            class="pagination-btn"
+                        >
+                            ← Prev
+                        </button>
+                        <span class="pagination-info" x-text="groupsPage + ' / ' + groupsTotalPages"></span>
+                        <button
+                            @click="loadGroups(groupsPage + 1)"
+                            :disabled="groupsPage >= groupsTotalPages"
+                            class="pagination-btn"
+                        >
+                            Next →
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Pagination -->
-                <div class="flex justify-center mt-4 space-x-4">
-                    <button
-                        @click="loadGroups(groupsPage - 1)"
-                        :disabled="groupsPage <= 1"
-                        class="page-btn"
-                    >
-                        Prev
-                    </button>
-                    <span
-                        class="self-center"
-                        x-text="groupsPage + ' / ' + groupsTotalPages"
-                    ></span>
-                    <button
-                        @click="loadGroups(groupsPage + 1)"
-                        :disabled="groupsPage >= groupsTotalPages"
-                        class="page-btn"
-                    >
-                        Next
-                    </button>
-                </div>
-            </div>
+                <!-- View: Users -->
+                <div x-show="view === 'users'" x-transition class="view-container">
+                    <div class="header-section">
+                        <h1 class="page-title">Top Users</h1>
+                        <p class="page-subtitle">Most active in the last 3 months</p>
+                    </div>
 
-            <!-- View: Users -->
-            <div x-show="view === 'users'" x-transition>
-                <h2 class="text-xl font-bold mb-4">
-                    Top Users (&lt; 3 Months)
-                </h2>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="text-tg-hint border-b border-tg-hint/20">
-                                <th class="p-2">#</th>
-                                <th class="p-2">Name</th>
-                                <th class="p-2 text-right">Msgs</th>
-                                <th class="p-2 text-right">Deleted</th>
-                                <th class="p-2 text-right">Avg</th>
-                                <th class="p-2 text-right">Activity</th>
-                                <th class="p-2 text-right">Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template
-                                x-for="(u, index) in usersList"
-                                :key="u.id"
-                            >
-                                <tr class="border-b border-tg-hint/10">
-                                    <td
-                                        class="p-2"
-                                        x-text="(usersPage - 1) * 5 + index + 1"
-                                    ></td>
-                                    <td class="p-2 font-medium">
-                                        <div x-text="u.first_name"></div>
-                                        <div
-                                            class="text-xs text-tg-hint"
-                                            x-show="u.last_name"
-                                            x-text="u.last_name"
-                                        ></div>
-                                    </td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(u.message)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(u.deleted || 0)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right"
-                                        x-text="formatNumber(u.average)"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right text-xs"
-                                        x-text="u.last_activity || '-'"
-                                    ></td>
-                                    <td
-                                        class="p-2 text-right text-xs"
-                                        x-text="formatDate(u.updatedAt)"
-                                    ></td>
-                                </tr>
-                            </template>
-                        </tbody>
-                    </table>
-                </div>
+                    <div class="card">
+                        <template x-for="(u, index) in usersList" :key="u.id">
+                            <div class="list-item">
+                                <div class="list-item-number" x-text="(usersPage - 1) * 5 + index + 1"></div>
+                                <div class="list-item-content">
+                                    <div class="list-item-title">
+                                        <span x-text="u.first_name"></span>
+                                        <span x-show="u.last_name" x-text="' ' + u.last_name"></span>
+                                    </div>
+                                    <div class="list-item-subtitle">
+                                        <span x-text="formatNumber(u.message)"></span> msgs • 
+                                        Avg: <span x-text="formatNumber(u.average)"></span>
+                                    </div>
+                                </div>
+                                <div class="list-item-badge" x-text="u.last_activity || 'N/A'"></div>
+                            </div>
+                        </template>
+                    </div>
 
-                <!-- Pagination -->
-                <div class="flex justify-center mt-4 space-x-4">
-                    <button
-                        @click="loadUsers(usersPage - 1)"
-                        :disabled="usersPage <= 1"
-                        class="page-btn"
-                    >
-                        Prev
-                    </button>
-                    <span
-                        class="self-center"
-                        x-text="usersPage + ' / ' + usersTotalPages"
-                    ></span>
-                    <button
-                        @click="loadUsers(usersPage + 1)"
-                        :disabled="usersPage >= usersTotalPages"
-                        class="page-btn"
-                    >
-                        Next
-                    </button>
+                    <div class="pagination">
+                        <button
+                            @click="loadUsers(usersPage - 1)"
+                            :disabled="usersPage <= 1"
+                            class="pagination-btn"
+                        >
+                            ← Prev
+                        </button>
+                        <span class="pagination-info" x-text="usersPage + ' / ' + usersTotalPages"></span>
+                        <button
+                            @click="loadUsers(usersPage + 1)"
+                            :disabled="usersPage >= usersTotalPages"
+                            class="pagination-btn"
+                        >
+                            Next →
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </main>
         </div>
 
         <script src="script.js"></script>
